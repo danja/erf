@@ -46,8 +46,14 @@ export class ErfAPI {
     // Calculate health score
     const healthScore = this.calculateHealthScore(data.stats)
 
+    // Add labels to nodes
+    const nodes = (data.nodes || []).map(node => ({
+      ...node,
+      label: node.id.split('/').pop() || node.id
+    }))
+
     return {
-      nodes: data.nodes || [],
+      nodes,
       edges: data.edges || [],
       stats: data.stats || {},
       health: {

@@ -40,6 +40,7 @@
     "acorn": "^8.14.0",
     "acorn-walk": "^8.3.4",
     "commander": "^12.1.0",
+    "express": "^4.21.2",
     "glob": "^11.0.0",
     "ignore": "^6.0.2",
     "loglevel": "^1.9.2",

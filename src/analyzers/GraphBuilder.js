@@ -77,9 +77,9 @@ export class GraphBuilder {
             line: imp.loc?.start?.line,
             type: imp.type
           })
-        } else if (imp.resolved) {
+        } else if (imp.resolvedPath?.path) {
           // Add import to resolved local file
-          this.rdfModel.addImport(file.path, imp.resolved, {
+          this.rdfModel.addImport(file.path, imp.resolvedPath.path, {
             line: imp.loc?.start?.line,
             type: imp.type
           })

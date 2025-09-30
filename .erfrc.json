@@ -1,7 +1,7 @@
 {
   "entryPoints": [
-    "src/index.js",
-    "bin/**/*.js"
+    "bin/erf.js",
+    "bin/erf-mcp.js"
   ],
   "ignore": [
     "**/*.test.js",

@@ -172,10 +172,27 @@ Create `.erfrc.json` in your project root:
 - Dependency depth
 - Fan-in/fan-out analysis
 
-### Interactive GUI
+### Web GUI
 
-- Force-directed graph visualization (D3.js)
-- Node filtering and search
+Launch the interactive web interface:
+
+```bash
+# Start API server (port 3001)
+npm run gui
+
+# In another terminal, start dev server (port 3000)
+npm run dev
+```
+
+Then open http://localhost:3000 in your browser.
+
+**Features:**
+- Force-directed graph visualization with D3.js
+- Color-coded nodes: 🟢 Entry points, 🔴 Dead code, 🔵 Files, 🟣 External modules
+- Node size proportional to file size
+- Interactive: click nodes for details, drag to reposition
+- Search and filter controls
+- Real-time health scoring
 - Zoom/pan navigation
 - Click to view source code
 - Color-coded health indicators
@@ -381,14 +398,17 @@ MIT License - see [LICENSE](LICENSE) file for details.
     - Testing guidelines and known issues
     - Contributing guidelines and resources
 
-### Next Steps ⏳
-
-12. **Web GUI**
-    - Vite + vanilla JS setup (NO Vue - using plain JS + D3.js)
-    - Force-directed graph visualization
+12. **Web GUI** ✅
+    - Vite + vanilla JS + D3.js (no framework dependencies)
+    - Force-directed graph visualization with physics simulation
     - Interactive filtering and search
-    - Node click to view source code
-    - Color-coded health indicators
+    - Node click to show detailed information
+    - Color-coded health indicators (red/orange/yellow/green)
+    - Node size proportional to file size
+    - Real-time analysis via Express API wrapper
+    - Successfully tested with erf analyzing its own codebase
+    - Location: `/home/danny/hyperdata/erf/ui/`
+    - Run with: `npm run gui` (API) + `npm run dev` (UI)
 
 ### Technical Decisions
 

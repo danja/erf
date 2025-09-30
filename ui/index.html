@@ -29,12 +29,12 @@
         <label>Filters:</label>
         <label><input type="checkbox" id="filter-files" checked> Files</label>
         <label><input type="checkbox" id="filter-external" checked> External</label>
-        <label><input type="checkbox" id="filter-dead"> Dead Code Only</label>
+        <label><input type="checkbox" id="filter-dead"> Unreachable Only</label>
       </div>
 
       <div class="control-group">
         <label for="layout-strength">Layout Strength:</label>
-        <input type="range" id="layout-strength" min="10" max="100" value="30">
+        <input type="range" id="layout-strength" min="10" max="100" value="50">
       </div>
     </div>
 
@@ -63,7 +63,7 @@
             <span class="node-icon entry"></span> Entry Point
           </div>
           <div class="legend-item">
-            <span class="node-icon dead"></span> Dead Code
+            <span class="node-icon dead"></span> Unreachable
           </div>
         </div>
       </aside>

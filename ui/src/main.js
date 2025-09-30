@@ -41,6 +41,7 @@ class ErfUI {
 
   async analyze() {
     const projectPath = this.elements.projectPath.value.trim() || '.'
+    console.log('[ErfUI] Starting analysis for:', projectPath)
 
     this.showLoading()
     this.hideError()
@@ -48,15 +49,23 @@ class ErfUI {
     try {
       // Analyze the project
       const data = await this.api.analyze(projectPath)
+      console.log('[ErfUI] Received data:', {
+        nodeCount: data.nodes?.length,
+        edgeCount: data.edges?.length,
+        stats: data.stats,
+        health: data.health
+      })
       this.currentData = data
 
       // Initialize visualizer if needed
       if (!this.visualizer) {
+        console.log('[ErfUI] Creating new GraphVisualizer')
         this.visualizer = new GraphVisualizer(this.elements.graphContainer)
         this.visualizer.on('nodeClick', (node) => this.showNodeDetails(node))
       }
 
       // Render the graph
+      console.log('[ErfUI] Calling visualizer.render()')
       this.visualizer.render(data)
 
       // Update stats and health
@@ -64,7 +73,9 @@ class ErfUI {
       this.updateHealth(data.health)
 
       this.hideLoading()
+      console.log('[ErfUI] Analysis complete')
     } catch (error) {
+      console.error('[ErfUI] Error during analysis:', error)
       this.hideLoading()
       this.showError(error.message)
     }
@@ -140,8 +151,12 @@ class ErfUI {
 
     if (node.metadata) {
       content += '<h4>Metadata</h4>'
-      if (node.metadata.size) content += `<p>Size: ${node.metadata.size} bytes</p>`
-      if (node.metadata.loc) content += `<p>Lines of Code: ${node.metadata.loc}</p>`
+      if (node.metadata.loc) {
+        content += `<p>Lines of Code: ${node.metadata.loc.toLocaleString()}</p>`
+      }
+      if (node.metadata.size) {
+        content += `<p>Size: ${node.metadata.size.toLocaleString()} bytes</p>`
+      }
     }
 
     if (node.imports && node.imports.length > 0) {
@@ -165,7 +180,7 @@ class ErfUI {
     }
 
     if (node.isDead) {
-      content += '<p><strong>⚠️ Dead Code</strong></p>'
+      content += '<p><strong>⚠️ Unreachable from Entry Points</strong></p>'
     }
 
     this.elements.detailsContent.innerHTML = content

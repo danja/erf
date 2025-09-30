@@ -29,39 +29,99 @@ export class GraphVisualizer {
     this.nodeGroup = this.svg.append('g').attr('class', 'nodes')
 
     // Add zoom behavior
-    const zoom = d3.zoom()
+    this.zoom = d3.zoom()
       .scaleExtent([0.1, 4])
       .on('zoom', (event) => {
         this.linkGroup.attr('transform', event.transform)
         this.nodeGroup.attr('transform', event.transform)
       })
 
-    this.svg.call(zoom)
+    this.svg.call(this.zoom)
 
     // Handle window resize
     window.addEventListener('resize', () => this.handleResize())
   }
 
   render(data) {
+    console.log('[GraphVisualizer] render() called with data:', {
+      nodeCount: data.nodes?.length,
+      edgeCount: data.edges?.length
+    })
     this.data = data
     this.filteredData = this.prepareData(data)
 
-    // Initialize force simulation
+    console.log('[GraphVisualizer] After prepareData:', {
+      nodeCount: this.filteredData.nodes.length,
+      edgeCount: this.filteredData.edges.length,
+      firstNode: this.filteredData.nodes[0]
+    })
+
+    // Initialize force simulation - spread out to use space
     this.simulation = d3.forceSimulation(this.filteredData.nodes)
       .force('link', d3.forceLink(this.filteredData.edges)
         .id(d => d.id)
-        .distance(100))
-      .force('charge', d3.forceManyBody().strength(-300))
+        .distance(100))  // Longer links for spread
+      .force('charge', d3.forceManyBody().strength(-400))  // More repulsion to spread nodes
       .force('center', d3.forceCenter(this.width / 2, this.height / 2))
-      .force('collision', d3.forceCollide().radius(30))
+      .force('collision', d3.forceCollide().radius(d => d.radius + 10))
+      .force('x', d3.forceX(this.width / 2).strength(0.05))  // Weaker centering
+      .force('y', d3.forceY(this.height / 2).strength(0.05))  // Weaker centering
+      .alphaDecay(0.02)  // Standard cooling
 
+    console.log('[GraphVisualizer] Simulation created, calling updateGraph()')
     this.updateGraph()
+
+    // After simulation settles, zoom to fit
+    this.simulation.on('end', () => {
+      this.zoomToFit()
+    })
+  }
+
+  zoomToFit() {
+    if (!this.filteredData || this.filteredData.nodes.length === 0) return
+
+    // Calculate bounding box
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
+
+    this.filteredData.nodes.forEach(node => {
+      const padding = node.radius || 10
+      minX = Math.min(minX, node.x - padding)
+      minY = Math.min(minY, node.y - padding)
+      maxX = Math.max(maxX, node.x + padding)
+      maxY = Math.max(maxY, node.y + padding)
+    })
+
+    const width = maxX - minX
+    const height = maxY - minY
+    const centerX = (minX + maxX) / 2
+    const centerY = (minY + maxY) / 2
+
+    // Calculate scale to fit with padding
+    const scale = Math.min(
+      this.width / width,
+      this.height / height,
+      2.0 // Max zoom
+    ) * 0.9 // 10% padding
+
+    // Apply transform
+    const transform = d3.zoomIdentity
+      .translate(this.width / 2, this.height / 2)
+      .scale(scale)
+      .translate(-centerX, -centerY)
+
+    this.svg.transition()
+      .duration(750)
+      .call(this.zoom.transform, transform)
   }
 
   prepareData(data) {
     // Clone nodes and edges
     const nodes = data.nodes.map(n => ({ ...n }))
-    const edges = data.edges.map(e => ({ ...e }))
+    const edges = data.edges.map(e => ({
+      ...e,
+      source: e.from,  // D3 expects 'source' and 'target'
+      target: e.to
+    }))
 
     // Add additional properties for visualization
     nodes.forEach(node => {
@@ -74,6 +134,7 @@ export class GraphVisualizer {
   }
 
   updateGraph() {
+    console.log('[GraphVisualizer] updateGraph() starting')
     // Render links
     const link = this.linkGroup
       .selectAll('line')
@@ -82,6 +143,8 @@ export class GraphVisualizer {
       .attr('class', 'link')
       .attr('marker-end', 'url(#arrowhead)')
 
+    console.log('[GraphVisualizer] Links rendered:', link.size())
+
     // Render nodes
     const node = this.nodeGroup
       .selectAll('g')
@@ -89,6 +152,8 @@ export class GraphVisualizer {
       .join('g')
       .attr('class', 'node')
       .call(this.drag())
+
+    console.log('[GraphVisualizer] Node groups created:', node.size())
 
     node.selectAll('*').remove() // Clear previous contents
 
@@ -99,11 +164,15 @@ export class GraphVisualizer {
       .attr('stroke', '#fff')
       .attr('stroke-width', 2)
 
+    console.log('[GraphVisualizer] Circles added')
+
     // Add labels
     node.append('text')
       .attr('class', 'node-label')
       .attr('dy', d => d.radius + 12)
       .text(d => d.label)
+
+    console.log('[GraphVisualizer] Labels added')
 
     // Add click handler
     node.on('click', (event, d) => {
@@ -122,12 +191,24 @@ export class GraphVisualizer {
 
       node.attr('transform', d => `translate(${d.x},${d.y})`)
     })
+
+    console.log('[GraphVisualizer] updateGraph() complete, simulation running')
   }
 
   getNodeRadius(node) {
-    if (node.isEntryPoint) return 12
-    if (node.type === 'external-module') return 8
-    return 10
+    if (node.type === 'external-module') return 6
+
+    // Scale radius based on file size
+    const size = node.metadata?.size || 0
+    if (size === 0) return 8
+
+    // Logarithmic scale: small files 8-12px, medium 12-18px, large 18-24px
+    const baseRadius = 8
+    const maxRadius = 24
+    const scaledSize = Math.log10(size + 1) / Math.log10(100000) // normalize to 0-1 range
+    const radius = baseRadius + (maxRadius - baseRadius) * Math.min(scaledSize, 1)
+
+    return Math.round(radius)
   }
 
   getNodeColor(node) {
