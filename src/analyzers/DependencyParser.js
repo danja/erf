@@ -84,9 +84,51 @@ export class DependencyParser {
         const imports = [];
         const exports = [];
         const calls = [];
+        const functions = [];
 
         // Walk AST
         this.walkAST(ast, {
+            // Function declarations
+            FunctionDeclaration: (node) => {
+                if (node.id && node.id.name) {
+                    functions.push({
+                        type: 'function',
+                        name: node.id.name,
+                        params: node.params.length,
+                        async: node.async || false,
+                        generator: node.generator || false,
+                        loc: node.loc
+                    });
+                }
+            },
+
+            // Class declarations and methods
+            ClassDeclaration: (node) => {
+                const className = node.id ? node.id.name : 'AnonymousClass';
+
+                // Add class methods
+                if (node.body && node.body.body) {
+                    for (const member of node.body.body) {
+                        if (member.type === 'ClassMethod' || member.type === 'MethodDefinition') {
+                            const methodName = member.key.name || member.key.value;
+                            if (methodName) {
+                                functions.push({
+                                    type: 'method',
+                                    name: `${className}.${methodName}`,
+                                    className: className,
+                                    methodName: methodName,
+                                    kind: member.kind || 'method',
+                                    static: member.static || false,
+                                    async: member.async || false,
+                                    params: member.params ? member.params.length : 0,
+                                    loc: member.loc
+                                });
+                            }
+                        }
+                    }
+                }
+            },
+
             // ES Module imports
             ImportDeclaration: (node) => {
                 imports.push({
@@ -209,6 +251,7 @@ export class DependencyParser {
             imports: resolvedImports,
             exports,
             calls,
+            functions,
             filePath
         };
     }

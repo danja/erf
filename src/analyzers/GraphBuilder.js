@@ -117,6 +117,24 @@ export class GraphBuilder {
           })
         }
       }
+
+      // Add functions and methods
+      for (const func of dependencies.functions || []) {
+        const functionId = `${file.path}#${func.name}`
+        this.rdfModel.addFunction(functionId, {
+          name: func.name,
+          type: func.type,
+          file: file.path,
+          line: func.loc?.start?.line,
+          params: func.params,
+          async: func.async,
+          generator: func.generator,
+          static: func.static,
+          kind: func.kind,
+          className: func.className,
+          methodName: func.methodName
+        })
+      }
     }
 
     // Phase 4: Mark entry points
@@ -314,13 +332,17 @@ export class GraphBuilder {
       const metadata = this.rdfModel.getNodeMetadata(file.id)
       const imports = this.rdfModel.queryImports(file.id)
       const exports = this.rdfModel.queryExports(file.id)
+      const dependents = this.rdfModel.queryDependents(file.id)
 
       nodes.push({
         id: file.id,
         type: 'file',
         metadata,
         isEntryPoint: entryPoints.some(ep => ep.id === file.id),
-        isMissing: metadata.isMissing === 'true'
+        isMissing: metadata.isMissing === 'true',
+        importCount: imports.length,
+        exportCount: exports.length,
+        dependentCount: dependents.length
       })
 
       // Add import edges

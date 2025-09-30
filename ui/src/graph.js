@@ -224,25 +224,39 @@ export class GraphVisualizer {
   getNodeRadius(node) {
     if (node.type === 'external-module') return 6
 
-    // Scale radius based on file size
-    const size = node.metadata?.size || 0
-    if (size === 0) return 8
+    // Scale radius based on dependents (how many files import this one)
+    const dependents = node.dependentCount || 0
 
-    // Logarithmic scale: small files 8-12px, medium 12-18px, large 18-24px
-    const baseRadius = 8
-    const maxRadius = 24
-    const scaledSize = Math.log10(size + 1) / Math.log10(100000) // normalize to 0-1 range
-    const radius = baseRadius + (maxRadius - baseRadius) * Math.min(scaledSize, 1)
-
-    return Math.round(radius)
+    if (dependents === 0) return 8  // No dependents = small (leaf node)
+    if (dependents === 1) return 10
+    if (dependents <= 3) return 12
+    if (dependents <= 5) return 15
+    if (dependents <= 10) return 18
+    if (dependents <= 20) return 22
+    return 26  // Highly depended upon = large (hub node)
   }
 
   getNodeColor(node) {
-    if (node.isMissing) return '#ef4444'
-    if (node.isDead) return '#f87171'
-    if (node.isEntryPoint) return '#4ade80'
-    if (node.type === 'external-module') return '#a78bfa'
-    return '#4a9eff'
+    if (node.isMissing) return '#ef4444'  // Red for missing files
+    if (node.isDead) return '#f87171'      // Light red for dead code
+    if (node.type === 'external-module') return '#a78bfa'  // Purple for external
+
+    // Color by import count (dependency complexity)
+    const imports = node.importCount || 0
+    const dependents = node.dependentCount || 0
+
+    // Hub nodes (many dependents) = green
+    if (dependents > 10) return '#4ade80'  // Green - important hub
+    if (dependents > 5) return '#86efac'   // Light green - medium hub
+
+    // Leaf nodes (no dependents) = blue
+    if (dependents === 0) return '#60a5fa'  // Blue - leaf node
+
+    // Complex nodes (many imports) = orange/yellow
+    if (imports > 10) return '#fb923c'  // Orange - complex
+    if (imports > 5) return '#fbbf24'   // Yellow - moderate complexity
+
+    return '#4a9eff'  // Default blue
   }
 
   getNodeLabel(id) {

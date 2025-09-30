@@ -285,6 +285,26 @@ export class RDFModel {
   }
 
   /**
+   * Query all dependents (files that import this node)
+   * @param {string|Object} nodeId - Node identifier or node
+   * @returns {Array} Array of dependent nodes
+   */
+  queryDependents(nodeId) {
+    const node = this._getOrCreateNode(nodeId)
+    const results = []
+
+    // Find all nodes that import this node
+    for (const quad of this.dataset.match(null, this.ns.erf.imports, node)) {
+      results.push({
+        node: quad.subject,
+        id: quad.subject.value
+      })
+    }
+
+    return results
+  }
+
+  /**
    * Query all entry points
    * @returns {Array} Array of entry point nodes
    */
