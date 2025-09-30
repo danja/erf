@@ -61,6 +61,9 @@ export class GraphBuilder {
       })
     }
 
+    // Build set of scanned file paths for validation
+    const scannedFiles = new Set(files.map(f => f.path))
+
     // Add all dependencies as edges
     for (const { file, dependencies } of parsedFiles) {
       // Add imports
@@ -78,11 +81,15 @@ export class GraphBuilder {
             type: imp.type
           })
         } else if (imp.resolvedPath?.path) {
-          // Add import to resolved local file
-          this.rdfModel.addImport(file.path, imp.resolvedPath.path, {
-            line: imp.loc?.start?.line,
-            type: imp.type
-          })
+          // Only add import if target file was scanned (exists)
+          if (scannedFiles.has(imp.resolvedPath.path)) {
+            this.rdfModel.addImport(file.path, imp.resolvedPath.path, {
+              line: imp.loc?.start?.line,
+              type: imp.type
+            })
+          } else {
+            console.warn(`Skipping import to non-existent file: ${imp.resolvedPath.path} (from ${file.path})`)
+          }
         }
       }
 

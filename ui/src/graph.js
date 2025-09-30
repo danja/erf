@@ -24,6 +24,20 @@ export class GraphVisualizer {
       .attr('width', this.width)
       .attr('height', this.height)
 
+    // Add arrow marker definition
+    this.svg.append('defs')
+      .append('marker')
+      .attr('id', 'arrowhead')
+      .attr('viewBox', '0 -5 10 10')
+      .attr('refX', 20)
+      .attr('refY', 0)
+      .attr('markerWidth', 6)
+      .attr('markerHeight', 6)
+      .attr('orient', 'auto')
+      .append('path')
+      .attr('d', 'M0,-5L10,0L0,5')
+      .attr('fill', '#404040')
+
     // Create groups for links and nodes
     this.linkGroup = this.svg.append('g').attr('class', 'links')
     this.nodeGroup = this.svg.append('g').attr('class', 'nodes')
