@@ -1,0 +1,25 @@
+{
+  "entryPoints": [
+    "src/index.js",
+    "bin/**/*.js"
+  ],
+  "ignore": [
+    "**/*.test.js",
+    "**/*.spec.js",
+    "tests/**",
+    "dist/**",
+    "build/**",
+    "coverage/**",
+    "node_modules/**",
+    ".git/**"
+  ],
+  "thresholds": {
+    "fileLines": 500,
+    "functionLines": 50,
+    "cyclomaticComplexity": 10,
+    "functionParameters": 5
+  },
+  "languages": ["javascript"],
+  "includeTests": false,
+  "outputFormat": "json"
+}

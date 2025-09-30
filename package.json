@@ -1,0 +1,56 @@
+{
+  "name": "erf-analyzer",
+  "version": "0.1.0",
+  "description": "embarrassing relative finder - identify dead code, broken dependencies, and complexity hotspots",
+  "type": "module",
+  "main": "src/index.js",
+  "bin": {
+    "erf": "bin/erf.js",
+    "erf-mcp": "bin/erf-mcp.js"
+  },
+  "scripts": {
+    "analyze": "node bin/erf.js analyze",
+    "gui": "node bin/erf.js gui",
+    "mcp": "node bin/erf-mcp.js",
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vitest",
+    "test:unit": "vitest run tests/unit",
+    "test:integration": "vitest run tests/integration",
+    "test:e2e": "playwright test"
+  },
+  "keywords": [
+    "code-analysis",
+    "dead-code",
+    "refactoring",
+    "dependency-graph",
+    "mcp",
+    "rdf"
+  ],
+  "author": "Danny Ayers",
+  "license": "MIT",
+  "dependencies": {
+    "@babel/parser": "^7.26.3",
+    "acorn": "^8.14.0",
+    "acorn-walk": "^8.3.4",
+    "ignore": "^6.0.2",
+    "loglevel": "^1.9.2",
+    "rdf-ext": "^2.5.2",
+    "@rdfjs/dataset": "^2.0.1",
+    "commander": "^12.1.0",
+    "glob": "^11.0.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.1",
+    "@vitejs/plugin-vue": "^5.2.1",
+    "vite": "^6.0.5",
+    "vitest": "^2.1.8",
+    "vue": "^3.5.13",
+    "d3": "^7.9.0",
+    "pinia": "^2.2.8"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
