@@ -190,13 +190,23 @@ export class GraphBuilder {
 
     // If no entry points configured, try to infer from package.json
     if (entryPoints.length === 0) {
-      await this._inferEntryPointsFromPackageJson(rootDir)
+      const inferred = await this._inferEntryPointsFromPackageJson(rootDir)
+
+      // If still no entry points, treat all files as potential entry points
+      if (inferred === 0) {
+        console.log('  No entry points found, treating all files as potential entry points')
+        const files = this.rdfModel.queryNodesByType('file')
+        for (const file of files) {
+          this.rdfModel.markAsEntryPoint(file.id)
+        }
+      }
     }
   }
 
   /**
    * Infer entry points from package.json
    * @private
+   * @returns {number} Number of entry points inferred
    */
   async _inferEntryPointsFromPackageJson(rootDir) {
     try {
@@ -244,6 +254,7 @@ export class GraphBuilder {
       }
 
       // Mark all inferred entry points
+      let markedCount = 0
       for (const entryPoint of inferredEntryPoints) {
         const files = this.rdfModel.queryNodesByType('file')
         const fileExists = files.some(f => f.id === entryPoint)
@@ -251,14 +262,18 @@ export class GraphBuilder {
         if (fileExists) {
           this.rdfModel.markAsEntryPoint(entryPoint)
           console.log(`  Inferred entry point: ${path.relative(rootDir, entryPoint)}`)
+          markedCount++
         }
       }
 
-      if (inferredEntryPoints.length === 0) {
+      if (markedCount === 0) {
         console.warn('  No entry points found in package.json')
       }
+
+      return markedCount
     } catch (error) {
       console.warn(`  Could not infer entry points from package.json: ${error.message}`)
+      return 0
     }
   }
 
