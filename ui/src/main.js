@@ -175,6 +175,10 @@ class ErfUI {
       content += '</ul>'
     }
 
+    if (node.isMissing) {
+      content += '<p><strong>✕ Missing File (import target not found)</strong></p>'
+    }
+
     if (node.isEntryPoint) {
       content += '<p><strong>📌 Entry Point</strong></p>'
     }

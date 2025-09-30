@@ -81,14 +81,20 @@ export class GraphBuilder {
             type: imp.type
           })
         } else if (imp.resolvedPath?.path) {
-          // Only add import if target file was scanned (exists)
           if (scannedFiles.has(imp.resolvedPath.path)) {
+            // Target file exists - add normal import
             this.rdfModel.addImport(file.path, imp.resolvedPath.path, {
               line: imp.loc?.start?.line,
               type: imp.type
             })
           } else {
-            console.warn(`Skipping import to non-existent file: ${imp.resolvedPath.path} (from ${file.path})`)
+            // Target file doesn't exist - create dead node
+            console.warn(`Import to non-existent file: ${imp.resolvedPath.path} (from ${file.path})`)
+            this.rdfModel.addFile(imp.resolvedPath.path, { isMissing: true })
+            this.rdfModel.addImport(file.path, imp.resolvedPath.path, {
+              line: imp.loc?.start?.line,
+              type: imp.type
+            })
           }
         }
       }
@@ -298,7 +304,8 @@ export class GraphBuilder {
         id: file.id,
         type: 'file',
         metadata,
-        isEntryPoint: entryPoints.some(ep => ep.id === file.id)
+        isEntryPoint: entryPoints.some(ep => ep.id === file.id),
+        isMissing: metadata.isMissing === 'true'
       })
 
       // Add import edges

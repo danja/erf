@@ -178,6 +178,18 @@ export class GraphVisualizer {
       .attr('stroke', '#fff')
       .attr('stroke-width', 2)
 
+    // Add X mark for missing files
+    node.filter(d => d.isMissing)
+      .append('text')
+      .attr('class', 'missing-mark')
+      .attr('text-anchor', 'middle')
+      .attr('dominant-baseline', 'central')
+      .style('fill', '#fff')
+      .style('font-size', d => d.radius * 1.2 + 'px')
+      .style('font-weight', 'bold')
+      .style('pointer-events', 'none')
+      .text('✕')
+
     console.log('[GraphVisualizer] Circles added')
 
     // Add labels
@@ -226,6 +238,7 @@ export class GraphVisualizer {
   }
 
   getNodeColor(node) {
+    if (node.isMissing) return '#ef4444'
     if (node.isDead) return '#f87171'
     if (node.isEntryPoint) return '#4ade80'
     if (node.type === 'external-module') return '#a78bfa'
