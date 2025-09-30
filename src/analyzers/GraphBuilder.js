@@ -27,7 +27,8 @@ export class GraphBuilder {
 
     // Phase 1: Scan filesystem
     console.log('Phase 1: Scanning filesystem...')
-    const files = await this.fileScanner.scan(rootDir)
+    const scanResult = await this.fileScanner.scan(rootDir)
+    const files = scanResult.files || []
     console.log(`Found ${files.length} JavaScript files`)
 
     // Phase 2: Parse all files and extract dependencies
@@ -54,8 +55,8 @@ export class GraphBuilder {
     // Add all files as nodes
     for (const { file, dependencies } of parsedFiles) {
       this.rdfModel.addFile(file.path, {
-        size: file.stats.size,
-        mtime: file.stats.mtime,
+        size: file.size,
+        mtime: file.modified,
         loc: this._countLOC(file.path)
       })
     }

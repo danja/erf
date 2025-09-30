@@ -21,5 +21,9 @@
   },
   "languages": ["javascript"],
   "includeTests": false,
-  "outputFormat": "json"
+  "outputFormat": "json",
+  "gui": {
+    "apiPort": 3001,
+    "devPort": 3000
+  }
 }

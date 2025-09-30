@@ -25,7 +25,7 @@ export class FileScanner {
      */
     async initializeIgnore(rootPath) {
         // Add patterns from config
-        const configPatterns = this.config.getIgnorePatterns();
+        const configPatterns = this.config.ignore || this.config.getIgnorePatterns?.() || [];
         this.ig.add(configPatterns);
 
         // Try to read .gitignore

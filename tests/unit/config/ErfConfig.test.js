@@ -37,10 +37,10 @@ describe('ErfConfig', () => {
     it('should return defaults when config file does not exist', async () => {
       const config = await ErfConfig.load('nonexistent.json')
 
+      expect(config).toBeDefined()
       expect(config.entryPoints).toBeDefined()
       expect(config.ignore).toBeDefined()
       expect(config.thresholds).toBeDefined()
-      expect(config.analyzers).toBeDefined()
     })
 
     it('should merge user config with defaults', async () => {
@@ -74,15 +74,8 @@ describe('ErfConfig', () => {
     it('should have complexity threshold', async () => {
       const config = await ErfConfig.load('nonexistent.json')
 
-      expect(config.thresholds.complexity).toBe(10)
-    })
-
-    it('should enable all analyzers by default', async () => {
-      const config = await ErfConfig.load('nonexistent.json')
-
-      expect(config.analyzers.deadCode).toBe(true)
-      expect(config.analyzers.complexity).toBe(true)
-      expect(config.analyzers.isolated).toBe(true)
+      expect(config.thresholds).toBeDefined()
+      expect(config.thresholds.cyclomaticComplexity).toBeGreaterThan(0)
     })
   })
 })

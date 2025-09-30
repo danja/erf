@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>erf - Dependency Graph Visualizer</title>
+  <link rel="stylesheet" href="./src/style.css">
+</head>
+<body>
+  <div id="app">
+    <header>
+      <h1>erf - Dependency Graph Visualizer</h1>
+      <p class="subtitle">Embarrassing Relative Finder</p>
+    </header>
+
+    <div class="controls">
+      <div class="control-group">
+        <label for="project-path">Project Path:</label>
+        <input type="text" id="project-path" placeholder="/path/to/project" value=".">
+        <button id="analyze-btn">Analyze</button>
+      </div>
+
+      <div class="control-group">
+        <label for="search">Search:</label>
+        <input type="text" id="search" placeholder="Search files...">
+      </div>
+
+      <div class="control-group">
+        <label>Filters:</label>
+        <label><input type="checkbox" id="filter-files" checked> Files</label>
+        <label><input type="checkbox" id="filter-external" checked> External</label>
+        <label><input type="checkbox" id="filter-dead"> Dead Code Only</label>
+      </div>
+
+      <div class="control-group">
+        <label for="layout-strength">Layout Strength:</label>
+        <input type="range" id="layout-strength" min="10" max="100" value="30">
+      </div>
+    </div>
+
+    <div class="main-content">
+      <aside class="sidebar">
+        <h3>Statistics</h3>
+        <div id="stats">
+          <p>Select a project to analyze</p>
+        </div>
+
+        <h3>Health Score</h3>
+        <div id="health">
+          <div class="health-score">--</div>
+          <div class="health-label">Not analyzed</div>
+        </div>
+
+        <h3>Legend</h3>
+        <div class="legend">
+          <div class="legend-item">
+            <span class="node-icon file"></span> File
+          </div>
+          <div class="legend-item">
+            <span class="node-icon external"></span> External Module
+          </div>
+          <div class="legend-item">
+            <span class="node-icon entry"></span> Entry Point
+          </div>
+          <div class="legend-item">
+            <span class="node-icon dead"></span> Dead Code
+          </div>
+        </div>
+      </aside>
+
+      <main class="graph-container">
+        <div id="graph"></div>
+        <div id="loading" class="hidden">
+          <div class="spinner"></div>
+          <p>Analyzing codebase...</p>
+        </div>
+        <div id="error" class="hidden"></div>
+      </main>
+
+      <aside class="details-panel hidden">
+        <button id="close-details">&times;</button>
+        <h3 id="details-title">Node Details</h3>
+        <div id="details-content"></div>
+      </aside>
+    </div>
+  </div>
+
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>

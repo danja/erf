@@ -14,6 +14,16 @@ export class ErfConfig {
     }
 
     /**
+     * Static factory method to load config
+     * @param {string} configPath - Path to config file
+     * @returns {Promise<Object>} Config object (plain object, not ErfConfig instance)
+     */
+    static async load(configPath = null) {
+        const instance = new ErfConfig(configPath)
+        return instance.config
+    }
+
+    /**
      * Load configuration from .erfrc.json or use defaults
      */
     loadConfig() {

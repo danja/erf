@@ -10,14 +10,17 @@
   },
   "scripts": {
     "analyze": "node bin/erf.js analyze",
-    "gui": "node bin/erf.js gui",
+    "gui": "node ui/server.js",
+    "gui:dev": "vite --config ui/vite.config.js",
     "mcp": "node bin/erf-mcp.js",
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview",
-    "test": "vitest",
+    "dev": "vite --config ui/vite.config.js",
+    "build": "vite build --config ui/vite.config.js",
+    "preview": "vite preview --config ui/vite.config.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "test:unit": "vitest run tests/unit",
     "test:integration": "vitest run tests/integration",
+    "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test"
   },
   "keywords": [
@@ -32,23 +35,24 @@
   "license": "MIT",
   "dependencies": {
     "@babel/parser": "^7.26.3",
+    "@modelcontextprotocol/sdk": "^0.6.1",
+    "@rdfjs/dataset": "^2.0.1",
     "acorn": "^8.14.0",
     "acorn-walk": "^8.3.4",
+    "commander": "^12.1.0",
+    "glob": "^11.0.0",
     "ignore": "^6.0.2",
     "loglevel": "^1.9.2",
-    "rdf-ext": "^2.5.2",
-    "@rdfjs/dataset": "^2.0.1",
-    "commander": "^12.1.0",
-    "glob": "^11.0.0"
+    "rdf-ext": "^2.5.2"
   },
   "devDependencies": {
     "@playwright/test": "^1.49.1",
     "@vitejs/plugin-vue": "^5.2.1",
+    "d3": "^7.9.0",
+    "pinia": "^2.2.8",
     "vite": "^6.0.5",
     "vitest": "^2.1.8",
-    "vue": "^3.5.13",
-    "d3": "^7.9.0",
-    "pinia": "^2.2.8"
+    "vue": "^3.5.13"
   },
   "engines": {
     "node": ">=18.0.0"

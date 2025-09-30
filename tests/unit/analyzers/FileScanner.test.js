@@ -15,7 +15,8 @@ describe('FileScanner', () => {
       }
 
       const scanner = new FileScanner(config)
-      const files = await scanner.scan(erfRoot)
+      const result = await scanner.scan(erfRoot)
+      const files = result.files
 
       expect(files.length).toBeGreaterThan(0)
       expect(files.every(f => f.path.endsWith('.js'))).toBe(true)
@@ -34,22 +35,24 @@ describe('FileScanner', () => {
       }
 
       const scanner = new FileScanner(config)
-      const files = await scanner.scan(erfRoot)
+      const result = await scanner.scan(erfRoot)
+      const files = result.files
 
       const filePaths = files.map(f => f.path)
       expect(filePaths.some(p => p.includes('FileScanner.js'))).toBe(false)
     })
 
-    it('should return file stats', async () => {
+    it('should return file info with metadata', async () => {
       const erfRoot = path.resolve(__dirname, '../../..')
       const config = { ignore: ['node_modules/**'] }
 
       const scanner = new FileScanner(config)
-      const files = await scanner.scan(erfRoot)
+      const result = await scanner.scan(erfRoot)
+      const files = result.files
 
-      expect(files[0].stats).toBeDefined()
-      expect(files[0].stats.size).toBeGreaterThan(0)
-      expect(files[0].stats.mtime).toBeInstanceOf(Date)
+      expect(files[0].path).toBeDefined()
+      expect(files[0].size).toBeGreaterThan(0)
+      expect(files[0].modified).toBeInstanceOf(Date)
     })
 
     it('should handle directories with no JavaScript files', async () => {
@@ -59,7 +62,8 @@ describe('FileScanner', () => {
       }
 
       const scanner = new FileScanner(config)
-      const files = await scanner.scan(emptyDir)
+      const result = await scanner.scan(emptyDir)
+      const files = result.files
 
       expect(files.length).toBe(0)
     })
