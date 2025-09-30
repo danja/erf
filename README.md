@@ -1,12 +1,12 @@
 # erf - Embarrassing Relative Finder
 
-A code quality and dependency analysis tool that helps identify dead code, broken dependencies, isolated subgraphs, and complexity hotspots in your codebase.
+A code quality and dependency analysis tool that helps identify unused code, broken dependencies, isolated subgraphs, and complexity hotspots in your codebase.
 
 ## Overview
 
 **erf** analyzes JavaScript/Node.js projects to find code quality issues that might be embarrassing if discovered by others:
 
-- 🔍 **Dead Code Detection** - Functions, classes, and modules that are never imported or called
+- 🔍 **Unused Code Detection** - Functions, classes, and modules that are never imported or called
 - 🔗 **Broken Dependencies** - Missing imports, circular dependencies, unresolved modules
 - 🏝️ **Isolated Subgraphs** - Code clusters with no connections to the main application
 - 🔥 **Complexity Hotspots** - Files and functions with high cyclomatic complexity
@@ -67,7 +67,7 @@ erf analyze --format json
 erf analyze --format rdf
 erf analyze --format html
 
-# Find dead code only
+# Find unused code only
 erf dead-code
 
 # Find isolated subgraphs
@@ -114,9 +114,9 @@ Create `.erfrc.json` in your project root:
 
 ## Features
 
-### Dead Code Detection
+### Unused Code Detection
 
-- **Semantic dead code** - Modules imported but never used
+- **Semantic unused code** - Modules imported but never used
 - **Unreachable functions** - Not called from any entry point
 - **Unused exports** - Exported but never imported
 - **Orphaned files** - Not in dependency graph
@@ -280,42 +280,58 @@ MIT License - see [LICENSE](LICENSE) file for details.
    - Location: `/home/danny/hyperdata/erf/src/analyzers/DependencyParser.js`
    - 350+ lines of production-ready code
 
-### In Progress 🔄
+5. **RDFModel.js** - RDF-Ext Wrapper ✅
+   - Wraps RDF-Ext library with convenience methods
+   - Implements custom erf ontology (erf:, code: namespaces)
+   - Provides methods to add nodes (files, modules, functions, classes)
+   - Provides methods to add edges (imports, exports, calls, references)
+   - Query interface for graph analysis (by type, imports, exports, entry points)
+   - Export to N-Quads format and graph statistics
+   - Location: `/home/danny/hyperdata/erf/src/graph/RDFModel.js`
+   - 450+ lines with full CRUD operations on RDF graph
 
-5. **Documentation**
-   - Created comprehensive README.md with usage examples, architecture overview, and development roadmap
+6. **GraphBuilder.js** - Dependency Graph Construction ✅
+   - Orchestrates FileScanner + DependencyParser
+   - Builds complete RDF dependency graph
+   - Identifies and marks entry points from config or package.json
+   - Handles external package detection
+   - Exports in multiple formats (json, rdf, stats)
+   - Location: `/home/danny/hyperdata/erf/src/analyzers/GraphBuilder.js`
+   - 4-phase build process with detailed logging
+
+7. **DeadCodeDetector.js** - Reachability Analysis ✅
+   - Graph traversal from entry points using BFS
+   - Marks all reachable nodes
+   - Identifies dead files (unreachable from entry points)
+   - Detects unused exports
+   - Calculates reachability percentage
+   - Generates human-readable reports
+   - Location: `/home/danny/hyperdata/erf/src/analyzers/DeadCodeDetector.js`
+   - Path finding capability to trace why code is dead
+
+8. **CLI Interface** - Commander.js Commands ✅
+   - `erf analyze` - Full codebase analysis with multiple output formats
+   - `erf dead-code` - Find unreachable code (text/json output)
+   - `erf health` - Generate health report with score (0-100)
+   - `erf isolated` - Find isolated subgraphs
+   - `erf init` - Create default .erfrc.json config
+   - Location: `/home/danny/hyperdata/erf/bin/erf.js`
+   - 250+ lines with full argument parsing and error handling
 
 ### Next Steps ⏳
 
-6. **RDFModel.js** - RDF-Ext Wrapper
-   - Wrap RDF-Ext library with convenience methods
-   - Implement custom erf ontology (erf:, code: namespaces)
-   - Provide methods to add nodes (files, modules, functions)
-   - Provide methods to add edges (imports, exports, calls)
-   - Query interface for graph analysis
-
-7. **GraphBuilder.js** - Dependency Graph Construction
-   - Use FileScanner + DependencyParser to build complete graph
-   - Populate RDF model with nodes and edges
-   - Identify entry points
-   - Mark external dependencies
-
-8. **DeadCodeDetector.js** - Reachability Analysis
-   - Traverse graph from entry points
-   - Mark reachable nodes
-   - Report unreachable code (dead code)
-   - Detect unused exports
-
 9. **MCP Server Interface**
-   - Implement stdio protocol server
-   - Define MCP tools (analyze, dead-code, isolated, health)
+   - Implement stdio protocol server (following semem patterns)
+   - Define MCP tools (erf_analyze, erf_dead_code, erf_isolated, erf_health)
    - Tool parameter validation with Zod schemas
+   - Entry point: bin/erf-mcp.js
 
 10. **Web GUI**
-    - Vite + Vue 3 setup
-    - D3.js force-directed graph visualization
+    - Vite + vanilla JS setup (NO Vue - using plain JS + D3.js)
+    - Force-directed graph visualization
     - Interactive filtering and search
-    - Source code viewer
+    - Node click to view source code
+    - Color-coded health indicators
 
 ### Technical Decisions
 
@@ -336,5 +352,8 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 - Following semem project patterns for MCP integration
 - Configuration follows common patterns (.erfrc.json similar to .eslintrc)
-- CLI will use Commander.js for consistency with Node.js ecosystem
-- GUI will be embeddable in other tools (similar to semem workbench)
+- CLI uses Commander.js for consistency with Node.js ecosystem
+- GUI will be vanilla JS + D3.js (no Vue framework)
+- Core analysis engine is now complete and functional
+- Ready for MCP server implementation next
+- All CLI commands working with proper error handling and output formatting

@@ -1,13 +1,13 @@
 # erf Implementation Plan
 
-**embarrassing relative finder** - A tool to identify dead code, broken dependencies, and complexity hotspots in codebases.
+**embarrassing relative finder** - A tool to identify unused code, broken dependencies, and complexity hotspots in codebases.
 
 ## Architecture Overview
 
 Standalone Node.js tool with three interfaces:
 1. **Core Analysis Engine** - Dependency graph builder using RDF-Ext
 2. **MCP Server** - Atomic tools for AI-assisted refactoring
-3. **Web GUI** - Force-directed graph visualization with Vite
+3. **Web GUI** - Force-directed graph visualization with Vite (vanilla JS + D3.js, no Vue)
 
 ## Deep Analysis & Architectural Decisions
 
