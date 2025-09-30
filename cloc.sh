@@ -1,0 +1,1 @@
+cloc --vcs=git --read-lang-def=cloc-lang-defs.txt .

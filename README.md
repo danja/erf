@@ -84,7 +84,7 @@ Or use locally:
 
 ```bash
 npm install erf-analyzer
-npx erf analyze
+npx erf-analyzer
 ```
 
 ## Usage
