@@ -101,9 +101,33 @@ export class GraphBuilder {
 
       // Add exports
       for (const exp of dependencies.exports) {
-        if (exp.exported) {
-          this.rdfModel.addExport(file.path, exp.exported, {
-            type: exp.type,
+        if (exp.type === 'named' && exp.specifiers) {
+          // Named exports - add each specifier
+          for (const specifier of exp.specifiers) {
+            this.rdfModel.addExport(file.path, specifier, {
+              type: 'named',
+              line: exp.loc?.start?.line
+            })
+          }
+        } else if (exp.type === 'default') {
+          // Default export
+          this.rdfModel.addExport(file.path, 'default', {
+            type: 'default',
+            line: exp.loc?.start?.line
+          })
+        } else if (exp.type === 'all') {
+          // Re-export all
+          this.rdfModel.addExport(file.path, '*', {
+            type: 'all',
+            source: exp.source,
+            line: exp.loc?.start?.line
+          })
+        } else if (exp.type === 'commonjs') {
+          // CommonJS export
+          const exportName = exp.property || 'module.exports'
+          this.rdfModel.addExport(file.path, exportName, {
+            type: 'commonjs',
+            kind: exp.kind,
             line: exp.loc?.start?.line
           })
         }

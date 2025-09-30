@@ -117,6 +117,57 @@ class ErfMCPServer {
               },
               required: ['directory']
             }
+          },
+          {
+            name: 'erf_hubs',
+            description: 'Identify hub files (files with many dependents). Hub files are core infrastructure that many other files depend on.',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                directory: {
+                  type: 'string',
+                  description: 'Directory path to analyze'
+                },
+                configPath: {
+                  type: 'string',
+                  description: 'Optional path to config file'
+                },
+                threshold: {
+                  type: 'number',
+                  description: 'Minimum number of dependents to be considered a hub (default: 5)',
+                  default: 5
+                },
+                limit: {
+                  type: 'number',
+                  description: 'Maximum number of hubs to return (default: 20)',
+                  default: 20
+                }
+              },
+              required: ['directory']
+            }
+          },
+          {
+            name: 'erf_functions',
+            description: 'Analyze function and method distribution across the codebase. Shows function counts, types, and complexity indicators.',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                directory: {
+                  type: 'string',
+                  description: 'Directory path to analyze'
+                },
+                configPath: {
+                  type: 'string',
+                  description: 'Optional path to config file'
+                },
+                showFiles: {
+                  type: 'boolean',
+                  description: 'Show per-file function counts (default: false)',
+                  default: false
+                }
+              },
+              required: ['directory']
+            }
           }
         ]
       }
@@ -136,6 +187,10 @@ class ErfMCPServer {
             return await this.handleHealth(args)
           case 'erf_isolated':
             return await this.handleIsolated(args)
+          case 'erf_hubs':
+            return await this.handleHubs(args)
+          case 'erf_functions':
+            return await this.handleFunctions(args)
           default:
             throw new Error(`Unknown tool: ${name}`)
         }
@@ -254,14 +309,32 @@ ${result.deadFiles.length > 0 ? '⚠️ Consider removing or investigating these
     await graphBuilder.buildGraph(targetDir)
 
     const stats = graphBuilder.getGraph().getStats()
-    const detector = new DeadCodeDetector(graphBuilder.getGraph())
-    const deadCodeResult = detector.detect()
+    const graphData = graphBuilder.export('json')
 
-    // Calculate health score (0-100)
-    const healthScore = Math.round(
-      (deadCodeResult.stats.reachabilityPercentage * 0.7) + // 70% weight on reachability
-      (stats.files > 0 ? Math.min((stats.imports / stats.files) * 10, 30) : 0) // 30% weight on connectivity
+    // Calculate graph-based metrics
+    const filesWithDependents = graphData.nodes.filter(n => n.type === 'file' && n.dependentCount > 0).length
+    const filesWithImports = graphData.nodes.filter(n => n.type === 'file' && n.importCount > 0).length
+    const connectedFiles = graphData.nodes.filter(n => n.type === 'file' && (n.dependentCount > 0 || n.importCount > 0)).length
+    const missingFiles = graphData.nodes.filter(n => n.isMissing).length
+
+    // Connectivity score (0-50): How well-connected is the codebase
+    const connectivityScore = stats.files > 0 ?
+      Math.round((connectedFiles / stats.files) * 50) : 0
+
+    // Structure score (0-30): Balance of imports/exports
+    const avgImportsPerFile = stats.files > 0 ? stats.imports / stats.files : 0
+    const avgExportsPerFile = stats.files > 0 ? stats.exports / stats.files : 0
+    const structureScore = Math.min(
+      Math.round((avgImportsPerFile + avgExportsPerFile) * 3),
+      30
     )
+
+    // Quality score (0-20): Few missing files
+    const missingPenalty = missingFiles * 5
+    const qualityScore = Math.max(20 - missingPenalty, 0)
+
+    // Calculate overall health score (0-100)
+    const healthScore = connectivityScore + structureScore + qualityScore
 
     const healthLevel = healthScore >= 80 ? '🟢 Excellent' :
                        healthScore >= 60 ? '🟡 Good' :
@@ -275,27 +348,33 @@ ${result.deadFiles.length > 0 ? '⚠️ Consider removing or investigating these
 
 ## Overall Health Score: ${healthScore}/100 ${healthLevel}
 
+### Score Breakdown
+- Connectivity: ${connectivityScore}/50 (${connectedFiles}/${stats.files} files connected)
+- Structure: ${structureScore}/30 (avg ${avgImportsPerFile.toFixed(1)} imports, ${avgExportsPerFile.toFixed(1)} exports per file)
+- Quality: ${qualityScore}/20 (${missingFiles} missing file(s))
+
 ## Graph Metrics
 - Files: ${stats.files}
-- Modules: ${stats.modules}
+- Functions: ${stats.functions}
 - Imports: ${stats.imports}
 - Exports: ${stats.exports}
-- Entry Points: ${stats.entryPoints}
 - External Modules: ${stats.externalModules}
 
-## Code Quality
-- Reachable Files: ${deadCodeResult.stats.reachableFiles}/${deadCodeResult.stats.totalFiles}
-- Dead Files: ${deadCodeResult.stats.deadFiles}
-- Unused Exports: ${deadCodeResult.stats.unusedExports}
-- Reachability: ${deadCodeResult.stats.reachabilityPercentage}%
+## Connectivity Analysis
+- Files with dependents: ${filesWithDependents} (hub candidates)
+- Files with imports: ${filesWithImports}
+- Connected files: ${connectedFiles}
+- Isolated files: ${stats.files - connectedFiles}
+${missingFiles > 0 ? `- ⚠️ Missing files: ${missingFiles}` : ''}
 
 ## Recommendations
-${healthScore < 50 ? '⚠️ **Critical**: Consider running \`erf_dead_code\` to identify and remove dead code.' : ''}
-${deadCodeResult.stats.deadFiles > 0 ? `- Remove ${deadCodeResult.stats.deadFiles} dead file(s)` : '✅ No dead files found'}
-${stats.entryPoints === 0 ? '- Configure entry points in .erfrc.json' : `✅ ${stats.entryPoints} entry point(s) configured`}
 ${healthScore >= 80 ? '✅ Codebase is in excellent health!' : ''}
 ${healthScore >= 60 && healthScore < 80 ? '👍 Codebase health is good, minor improvements possible.' : ''}
-${healthScore < 60 ? '🔧 Significant improvements recommended.' : ''}`
+${healthScore < 60 ? '🔧 Significant improvements recommended:' : ''}
+${connectivityScore < 25 ? '- ⚠️ Low connectivity - many isolated files' : ''}
+${missingFiles > 0 ? `- ⚠️ Fix ${missingFiles} missing import(s)` : ''}
+${stats.files - connectedFiles > 10 ? `- Consider reviewing ${stats.files - connectedFiles} isolated files` : ''}
+${healthScore >= 60 && missingFiles === 0 ? '- ✅ No broken imports found' : ''}`
         }
       ]
     }
@@ -325,6 +404,132 @@ Found ${result.deadFiles.length} isolated file(s) with no connection to entry po
 ${result.deadFiles.length > 0 ? result.deadFiles.map(f => `- ${f.path}`).join('\n') : 'No isolated files found! ✅'}
 
 ${result.deadFiles.length > 0 ? '\n⚠️ These files are not reachable from any configured entry point.\nConsider:\n- Adding entry points in .erfrc.json\n- Removing unused files\n- Investigating why they are isolated' : ''}`
+        }
+      ]
+    }
+  }
+
+  /**
+   * Handle erf_hubs tool call
+   */
+  async handleHubs(args) {
+    const targetDir = path.resolve(process.cwd(), args.directory)
+    const config = await ErfConfig.load(args.configPath || null)
+    const threshold = args.threshold || 5
+    const limit = args.limit || 20
+
+    const graphBuilder = new GraphBuilder(config)
+    await graphBuilder.buildGraph(targetDir)
+
+    // Export graph as JSON to get dependency metrics
+    const graphData = graphBuilder.export('json')
+
+    // Find hub files (files with many dependents)
+    const hubs = graphData.nodes
+      .filter(n => n.type === 'file' && !n.isMissing)
+      .filter(n => n.dependentCount >= threshold)
+      .sort((a, b) => b.dependentCount - a.dependentCount)
+      .slice(0, limit)
+
+    return {
+      content: [
+        {
+          type: 'text',
+          text: `# Hub Files: ${targetDir}
+
+Found ${hubs.length} hub file(s) with ${threshold}+ dependents:
+
+${hubs.length > 0 ? hubs.map((hub, idx) => `${idx + 1}. **${hub.id}**
+   - Dependents: ${hub.dependentCount}
+   - Imports: ${hub.importCount}
+   - Exports: ${hub.exportCount}
+   - Type: ${hub.dependentCount > 10 ? '🟢 Major Hub' : '🟡 Medium Hub'}`).join('\n\n') : 'No hub files found with the specified threshold.'}
+
+## Analysis
+${hubs.length > 0 ? `
+- Hub files are core infrastructure components
+- Changes to hubs affect ${hubs.reduce((sum, h) => sum + h.dependentCount, 0)} total dependencies
+- Consider extra testing/review when modifying these files
+` : `No files found with ${threshold}+ dependents. Try lowering the threshold.`}`
+        }
+      ]
+    }
+  }
+
+  /**
+   * Handle erf_functions tool call
+   */
+  async handleFunctions(args) {
+    const targetDir = path.resolve(process.cwd(), args.directory)
+    const config = await ErfConfig.load(args.configPath || null)
+    const showFiles = args.showFiles || false
+
+    const graphBuilder = new GraphBuilder(config)
+    await graphBuilder.buildGraph(targetDir)
+
+    const stats = graphBuilder.getGraph().getStats()
+    const functions = graphBuilder.getGraph().queryNodesByType('function')
+
+    // Analyze function types
+    const functionStats = {
+      total: functions.length,
+      methods: 0,
+      regularFunctions: 0,
+      async: 0,
+      static: 0,
+      generators: 0
+    }
+
+    const fileStats = new Map()
+
+    for (const func of functions) {
+      const metadata = graphBuilder.getGraph().getNodeMetadata(func.id)
+
+      if (metadata.type === 'method') functionStats.methods++
+      else functionStats.regularFunctions++
+
+      if (metadata.async === 'true') functionStats.async++
+      if (metadata.static === 'true') functionStats.static++
+      if (metadata.generator === 'true') functionStats.generators++
+
+      // Track per-file counts
+      if (metadata.file) {
+        const count = fileStats.get(metadata.file) || 0
+        fileStats.set(metadata.file, count + 1)
+      }
+    }
+
+    // Find files with most functions
+    const topFiles = [...fileStats.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10)
+
+    return {
+      content: [
+        {
+          type: 'text',
+          text: `# Function Analysis: ${targetDir}
+
+## Overall Statistics
+- Total Functions/Methods: ${functionStats.total}
+- Regular Functions: ${functionStats.regularFunctions}
+- Class Methods: ${functionStats.methods}
+- Async Functions: ${functionStats.async}
+- Static Methods: ${functionStats.static}
+- Generators: ${functionStats.generators}
+
+## Averages
+- Functions per file: ${stats.files > 0 ? (functionStats.total / stats.files).toFixed(1) : 0}
+
+${showFiles && topFiles.length > 0 ? `## Files with Most Functions
+
+${topFiles.map(([file, count], idx) => `${idx + 1}. ${file}: ${count} functions`).join('\n')}` : ''}
+
+## Analysis
+${functionStats.total === 0 ? '⚠️ No functions detected. Check if files are being parsed correctly.' : ''}
+${functionStats.async > 0 ? `✅ ${functionStats.async} async functions detected (${((functionStats.async / functionStats.total) * 100).toFixed(1)}%)` : ''}
+${functionStats.methods > functionStats.regularFunctions ? '📊 Method-heavy codebase (more OOP style)' : ''}
+${functionStats.regularFunctions > functionStats.methods ? '📊 Function-heavy codebase (more functional style)' : ''}`
         }
       ]
     }
