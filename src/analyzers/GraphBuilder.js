@@ -2,6 +2,7 @@ import path from 'path'
 import { FileScanner } from './FileScanner.js'
 import { DependencyParser } from './DependencyParser.js'
 import { RDFModel } from '../graph/RDFModel.js'
+import logger from '../utils/Logger.js'
 
 /**
  * GraphBuilder - Constructs dependency graph from codebase
@@ -43,7 +44,18 @@ export class GraphBuilder {
           dependencies
         })
       } catch (error) {
-        console.warn(`Failed to parse ${file.path}: ${error.message}`)
+        logger.error(`Failed to parse ${file.path}: ${error.message}`)
+        // Still add file with parse error flag
+        parsedFiles.push({
+          file,
+          dependencies: {
+            imports: [],
+            exports: [],
+            calls: [],
+            functions: [],
+            error: error.message
+          }
+        })
       }
     }
 
@@ -57,7 +69,9 @@ export class GraphBuilder {
       this.rdfModel.addFile(file.path, {
         size: file.size,
         mtime: file.modified,
-        loc: this._countLOC(file.path)
+        loc: this._countLOC(file.path),
+        parseError: dependencies.error ? true : false,
+        parseErrorMessage: dependencies.error || undefined
       })
     }
 
@@ -69,6 +83,11 @@ export class GraphBuilder {
       // Add imports
       for (const imp of dependencies.imports) {
         const targetPath = imp.resolved || imp.source
+
+        // Debug log for null source
+        if (!imp.source) {
+          logger.debug(`Import with null source in ${file.path}: type=${imp.type}, dynamic=${imp.dynamic}`)
+        }
 
         // Determine if external package
         const isExternal = this._isExternalPackage(imp.source)
@@ -324,6 +343,9 @@ export class GraphBuilder {
    * @private
    */
   _isExternalPackage(modulePath) {
+    // Handle null/undefined (dynamic imports)
+    if (!modulePath) return false
+
     // External if doesn't start with . or /
     return !modulePath.startsWith('.') && !modulePath.startsWith('/')
   }
@@ -363,10 +385,13 @@ export class GraphBuilder {
         type: 'file',
         metadata,
         isEntryPoint: entryPoints.some(ep => ep.id === file.id),
-        isMissing: metadata.isMissing === 'true',
+        isMissing: metadata.isMissing === 'true' || metadata.isMissing === true,
+        hasParseError: metadata.parseError === 'true' || metadata.parseError === true,
+        parseErrorMessage: metadata.parseErrorMessage,
         importCount: imports.length,
         exportCount: exports.length,
-        dependentCount: dependents.length
+        dependentCount: dependents.length,
+        size: parseInt(metadata.size) || 0
       })
 
       // Add import edges

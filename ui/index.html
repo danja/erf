@@ -18,6 +18,7 @@
         <label for="project-path">Project Path:</label>
         <input type="text" id="project-path" placeholder="/path/to/project" value=".">
         <button id="analyze-btn">Analyze</button>
+        <button id="export-rdf-btn" disabled>Export</button>
       </div>
 
       <div class="control-group">
@@ -64,6 +65,9 @@
           </div>
           <div class="legend-item">
             <span class="node-icon dead"></span> Unreachable
+          </div>
+          <div class="legend-item">
+            <span class="node-icon parse-error"></span> Parse Error
           </div>
         </div>
       </aside>

@@ -6,9 +6,13 @@ import { fileURLToPath } from 'url'
 import { ErfConfig } from '../src/config/ErfConfig.js'
 import { GraphBuilder } from '../src/analyzers/GraphBuilder.js'
 import { DeadCodeDetector } from '../src/analyzers/DeadCodeDetector.js'
+import { initLogger } from '../src/utils/Logger.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
+
+// Initialize logger with stdout enabled (CLI mode)
+await initLogger({ stdout: true })
 
 const program = new Command()
 
@@ -222,47 +226,65 @@ program
   })
 
 /**
- * Init command - Create default config file
+ * Show command - Launch GUI visualization
  */
 program
-  .command('init')
-  .description('Initialize erf configuration file')
-  .action(async () => {
+  .command('show')
+  .description('Launch GUI visualization for codebase analysis')
+  .argument('[directory]', 'Directory to analyze', '.')
+  .option('-p, --port <port>', 'Server port', '3030')
+  .action(async (directory, options) => {
     try {
-      const fs = await import('fs/promises')
-      const configPath = path.join(process.cwd(), '.erfrc.json')
+      const targetDir = path.resolve(process.cwd(), directory)
+      console.log(`Launching erf GUI for: ${targetDir}`)
+      console.log(`Server will start on port ${options.port}`)
 
-      // Check if config already exists
-      try {
-        await fs.access(configPath)
-        console.log('Configuration file already exists: .erfrc.json')
-        return
-      } catch {
-        // File doesn't exist, create it
+      // Import child_process to spawn the dev servers
+      const { spawn } = await import('child_process')
+
+      // Set environment variable for the target directory
+      process.env.ERF_TARGET_DIR = targetDir
+
+      // Get the erf package directory
+      const erfRoot = path.resolve(__dirname, '..')
+
+      // Start API server
+      const apiServer = spawn('node', ['ui/server.js'], {
+        cwd: erfRoot,
+        env: { ...process.env, PORT: options.port },
+        stdio: 'inherit'
+      })
+
+      // Wait a bit for API server to start
+      await new Promise(resolve => setTimeout(resolve, 2000))
+
+      // Start Vite dev server
+      const viteServer = spawn('npx', ['vite', '--config', 'ui/vite.config.js'], {
+        cwd: erfRoot,
+        stdio: 'inherit'
+      })
+
+      // Handle cleanup on exit
+      const cleanup = () => {
+        apiServer.kill()
+        viteServer.kill()
+        process.exit(0)
       }
 
-      const defaultConfig = {
-        entryPoints: ['src/index.js'],
-        ignore: [
-          'node_modules/**',
-          'dist/**',
-          'build/**',
-          '**/*.test.js',
-          '**/*.spec.js'
-        ],
-        thresholds: {
-          complexity: 10,
-          minReferences: 1
-        },
-        analyzers: {
-          deadCode: true,
-          complexity: true,
-          isolated: true
-        }
-      }
+      process.on('SIGINT', cleanup)
+      process.on('SIGTERM', cleanup)
 
-      await fs.writeFile(configPath, JSON.stringify(defaultConfig, null, 2))
-      console.log('Created .erfrc.json configuration file')
+      // Wait for both processes
+      apiServer.on('error', (error) => {
+        console.error(`API server error: ${error.message}`)
+        cleanup()
+      })
+
+      viteServer.on('error', (error) => {
+        console.error(`Vite server error: ${error.message}`)
+        cleanup()
+      })
+
     } catch (error) {
       console.error(`Error: ${error.message}`)
       process.exit(1)

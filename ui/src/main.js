@@ -10,6 +10,7 @@ class ErfUI {
     this.elements = {
       projectPath: document.getElementById('project-path'),
       analyzeBtn: document.getElementById('analyze-btn'),
+      exportRdfBtn: document.getElementById('export-rdf-btn'),
       search: document.getElementById('search'),
       filterFiles: document.getElementById('filter-files'),
       filterExternal: document.getElementById('filter-external'),
@@ -31,6 +32,7 @@ class ErfUI {
 
   setupEventListeners() {
     this.elements.analyzeBtn.addEventListener('click', () => this.analyze())
+    this.elements.exportRdfBtn.addEventListener('click', () => this.exportRdf())
     this.elements.search.addEventListener('input', (e) => this.handleSearch(e.target.value))
     this.elements.filterFiles.addEventListener('change', () => this.applyFilters())
     this.elements.filterExternal.addEventListener('change', () => this.applyFilters())
@@ -72,11 +74,39 @@ class ErfUI {
       this.updateStats(data.stats)
       this.updateHealth(data.health)
 
+      // Enable export button
+      this.elements.exportRdfBtn.disabled = false
+
       this.hideLoading()
       console.log('[ErfUI] Analysis complete')
     } catch (error) {
       console.error('[ErfUI] Error during analysis:', error)
       this.hideLoading()
+      this.showError(error.message)
+    }
+  }
+
+  async exportRdf() {
+    const projectPath = this.elements.projectPath.value.trim() || '.'
+    console.log('[ErfUI] Exporting RDF for:', projectPath)
+
+    try {
+      const rdfData = await this.api.exportRdf(projectPath)
+
+      // Create download link
+      const blob = new Blob([rdfData], { type: 'text/turtle' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `erf-graph-${Date.now()}.ttl`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+
+      console.log('[ErfUI] RDF export complete')
+    } catch (error) {
+      console.error('[ErfUI] Error exporting RDF:', error)
       this.showError(error.message)
     }
   }
@@ -173,6 +203,13 @@ class ErfUI {
         content += `<li>${exp}</li>`
       })
       content += '</ul>'
+    }
+
+    if (node.hasParseError) {
+      content += '<p><strong style="color: #dc2626;">⚠️ Parse Error</strong></p>'
+      if (node.parseErrorMessage) {
+        content += `<p style="color: #dc2626; font-size: 0.9em;"><code>${node.parseErrorMessage}</code></p>`
+      }
     }
 
     if (node.isMissing) {

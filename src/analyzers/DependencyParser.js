@@ -6,7 +6,7 @@
 import { promises as fs } from 'fs';
 import { parse } from '@babel/parser';
 import { dirname, resolve, extname, join } from 'path';
-import logger from 'loglevel';
+import logger from '../utils/Logger.js';
 
 export class DependencyParser {
     constructor(config) {

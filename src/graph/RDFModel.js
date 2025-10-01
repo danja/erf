@@ -13,8 +13,8 @@ export class RDFModel {
 
     // Define namespaces
     this.ns = {
-      erf: namespace('http://example.org/erf#'),
-      code: namespace('http://example.org/code#'),
+      erf: namespace('http://purl.org/stuff/erf/'),
+      code: namespace('http://purl.org/stuff/code/'),
       rdf: namespace('http://www.w3.org/1999/02/22-rdf-syntax-ns#'),
       rdfs: namespace('http://www.w3.org/2000/01/rdf-schema#')
     }
@@ -44,6 +44,15 @@ export class RDFModel {
     }
     if (metadata.loc) {
       this.addTriple(fileNode, this.ns.code.loc, rdf.literal(metadata.loc))
+    }
+    if (metadata.parseError !== undefined) {
+      this.addTriple(fileNode, this.ns.erf.parseError, rdf.literal(metadata.parseError))
+    }
+    if (metadata.parseErrorMessage) {
+      this.addTriple(fileNode, this.ns.erf.parseErrorMessage, rdf.literal(metadata.parseErrorMessage))
+    }
+    if (metadata.isMissing !== undefined) {
+      this.addTriple(fileNode, this.ns.erf.isMissing, rdf.literal(metadata.isMissing))
     }
 
     this.nodeCache.set(filePath, { node: fileNode, type: 'file' })

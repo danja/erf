@@ -14,6 +14,7 @@ import {
 import { GraphBuilder } from '../src/analyzers/GraphBuilder.js'
 import { DeadCodeDetector } from '../src/analyzers/DeadCodeDetector.js'
 import { ErfConfig } from '../src/config/ErfConfig.js'
+import { initLogger } from '../src/utils/Logger.js'
 import path from 'path'
 
 /**
@@ -541,6 +542,9 @@ ${functionStats.regularFunctions > functionStats.methods ? '📊 Function-heavy 
     console.error('erf MCP server running on stdio')
   }
 }
+
+// Initialize logger (disable stdout for MCP STDIO)
+await initLogger({ stdout: false })
 
 // Start server
 const server = new ErfMCPServer()

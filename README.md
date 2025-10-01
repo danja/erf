@@ -25,8 +25,8 @@ erf is designed as a standalone Node.js tool with three interfaces:
 Uses RDF-Ext to model code structure as a semantic graph with custom ontology:
 
 ```turtle
-@prefix erf: <http://example.org/erf#> .
-@prefix code: <http://example.org/code#> .
+@prefix erf: <http://purl.org/stuff/erf/> .
+@prefix code: <http://purl.org/stuff/code/> .
 
 # Nodes
 erf:File, erf:Module, erf:Function, erf:Class, erf:Variable

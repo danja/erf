@@ -2,7 +2,11 @@ import express from 'express'
 import { GraphBuilder } from '../src/analyzers/GraphBuilder.js'
 import { DeadCodeDetector } from '../src/analyzers/DeadCodeDetector.js'
 import { ErfConfig } from '../src/config/ErfConfig.js'
+import { initLogger } from '../src/utils/Logger.js'
 import path from 'path'
+
+// Initialize logger with stdout enabled (API server mode)
+await initLogger({ stdout: true })
 
 const app = express()
 const PORT = 3001
@@ -86,6 +90,39 @@ app.post('/api/analyze', async (req, res) => {
     })
   } catch (error) {
     console.error('Analysis error:', error)
+    res.status(500).json({ error: error.message })
+  }
+})
+
+/**
+ * POST /api/export-rdf
+ * Export graph as RDF Turtle format
+ */
+app.post('/api/export-rdf', async (req, res) => {
+  try {
+    const { directory, configPath } = req.body
+
+    if (!directory) {
+      return res.status(400).json({ error: 'Directory is required' })
+    }
+
+    const targetDir = path.resolve(directory)
+    console.log(`Exporting RDF for: ${targetDir}`)
+
+    // Load config
+    const config = await ErfConfig.load(configPath || null)
+
+    // Build graph
+    const graphBuilder = new GraphBuilder(config)
+    await graphBuilder.buildGraph(targetDir)
+
+    // Export as Turtle
+    const turtle = graphBuilder.export('rdf')
+
+    res.setHeader('Content-Type', 'text/turtle')
+    res.send(turtle)
+  } catch (error) {
+    console.error('RDF export error:', error)
     res.status(500).json({ error: error.message })
   }
 })

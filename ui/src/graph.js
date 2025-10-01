@@ -171,21 +171,22 @@ export class GraphVisualizer {
 
     node.selectAll('*').remove() // Clear previous contents
 
-    // Add circles
-    node.append('circle')
+    // Add circles (except for missing files)
+    node.filter(d => !d.isMissing)
+      .append('circle')
       .attr('r', d => d.radius)
       .attr('fill', d => d.color)
       .attr('stroke', '#fff')
       .attr('stroke-width', 2)
 
-    // Add X mark for missing files
+    // Add black X mark for missing files (no circle)
     node.filter(d => d.isMissing)
       .append('text')
       .attr('class', 'missing-mark')
       .attr('text-anchor', 'middle')
       .attr('dominant-baseline', 'central')
-      .style('fill', '#fff')
-      .style('font-size', d => d.radius * 1.2 + 'px')
+      .style('fill', '#000')
+      .style('font-size', d => d.radius * 1.5 + 'px')
       .style('font-weight', 'bold')
       .style('pointer-events', 'none')
       .text('✕')
@@ -223,29 +224,37 @@ export class GraphVisualizer {
 
   getNodeRadius(node) {
     if (node.type === 'external-module') return 6
+    if (node.isMissing) return 12  // Missing files show as medium X
 
-    // Scale radius based on dependents (how many files import this one)
-    const dependents = node.dependentCount || 0
+    // Scale radius based on file size (in bytes)
+    const size = node.size || 0
 
-    if (dependents === 0) return 8  // No dependents = small (leaf node)
-    if (dependents === 1) return 10
-    if (dependents <= 3) return 12
-    if (dependents <= 5) return 15
-    if (dependents <= 10) return 18
-    if (dependents <= 20) return 22
-    return 26  // Highly depended upon = large (hub node)
+    if (size === 0) return 6
+    if (size < 1000) return 8      // < 1KB
+    if (size < 5000) return 10     // < 5KB
+    if (size < 10000) return 12    // < 10KB
+    if (size < 25000) return 15    // < 25KB
+    if (size < 50000) return 18    // < 50KB
+    if (size < 100000) return 22   // < 100KB
+    return 26                       // >= 100KB (large files)
   }
 
   getNodeColor(node) {
-    if (node.isMissing) return '#ef4444'  // Red for missing files
-    if (node.isDead) return '#f87171'      // Light red for dead code
     if (node.type === 'external-module') return '#a78bfa'  // Purple for external
+    if (node.hasParseError) return '#dc2626'  // Dark red for parse errors
+    if (node.isDead) return '#f87171'      // Light red for dead code
 
-    // Color by import count (dependency complexity)
-    const imports = node.importCount || 0
+    const size = node.size || 0
     const dependents = node.dependentCount || 0
+    const imports = node.importCount || 0
 
-    // Hub nodes (many dependents) = green
+    // Bad relations: large files (>25KB) with few dependents (<3)
+    // These are isolated large files not on critical paths
+    if (size > 25000 && dependents < 3) {
+      return '#ef4444'  // Red - bad relation (large but not critical)
+    }
+
+    // Hub nodes (many dependents) = green (on critical paths)
     if (dependents > 10) return '#4ade80'  // Green - important hub
     if (dependents > 5) return '#86efac'   // Light green - medium hub
 

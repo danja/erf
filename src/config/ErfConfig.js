@@ -5,7 +5,7 @@
 
 import { readFileSync, existsSync } from 'fs';
 import { join, resolve } from 'path';
-import logger from 'loglevel';
+import logger from '../utils/Logger.js';
 
 export class ErfConfig {
     constructor(configPath = null) {

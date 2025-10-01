@@ -6,7 +6,7 @@
 import { promises as fs } from 'fs';
 import { join, relative, resolve, extname } from 'path';
 import ignore from 'ignore';
-import logger from 'loglevel';
+import logger from '../utils/Logger.js';
 
 export class FileScanner {
     constructor(config) {

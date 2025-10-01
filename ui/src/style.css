@@ -224,6 +224,11 @@ button:active {
   background: var(--color-node-dead);
 }
 
+.node-icon.parse-error {
+  color: #dc2626;
+  background: #dc2626;
+}
+
 /* Graph Container */
 .graph-container {
   flex: 1;

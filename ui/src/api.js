@@ -56,6 +56,27 @@ export class ErfAPI {
   }
 
   /**
+   * Export graph as RDF Turtle format
+   * @param {string} projectPath - Path to analyze
+   * @returns {Promise<string>} RDF Turtle data
+   */
+  async exportRdf(projectPath) {
+    const response = await fetch(`${this.baseUrl}/export-rdf`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ directory: projectPath })
+    })
+
+    if (!response.ok) {
+      throw new Error(`RDF export failed: ${response.statusText}`)
+    }
+
+    return await response.text()
+  }
+
+  /**
    * Calculate health score from stats
    */
   calculateHealthScore(stats) {
