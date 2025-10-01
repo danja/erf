@@ -37,7 +37,7 @@ Clone this repo, `cd` into it, run `npm install` then `npm run dev` to start the
 claude mcp add erf node /absolute/path/to/erf/bin/erf-mcp.js
 ```
 
- *for me :claude mcp add erf node /home/danny/hyperdata/erf/bin/erf-mcp.js*
+ *works for me :claude mcp add erf node /home/danny/hyperdata/erf/bin/erf-mcp.js*
 
 *later : claude mcp add erf npx erf-analyzer*
 
