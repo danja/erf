@@ -1,6 +1,6 @@
 # erf - Embarrassing Relative Finder
 
-A code quality and dependency analysis tool that helps identify unused code, broken dependencies, isolated subgraphs, and complexity hotspots in your codebase.
+A code quality and dependency analysis tool that helps identify unused code, broken dependencies, isolated subgraphs, and complexity hotspots in your codebase. Now you can determine who you shouldn't invite to the wedding.
 
 ![Screenshot](docs/screenshot.png)
 
@@ -21,7 +21,11 @@ erf is designed as a standalone Node.js tool with three interfaces:
 1. **Core Analysis Engine** - JavaScript AST parsing and RDF-based dependency graph
 2. **MCP Server** - Model Context Protocol integration for AI assistants
 3. **Web GUI** - Interactive force-directed graph visualization
+4. **CLI** 
 
+## Status : 2025-10-01
+
+I think all the code is in place, but not necessarily in the right order. GUI works a treat, MCP needs testing, CLI is only a fragment.
 
 ## Quick Start
 

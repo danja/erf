@@ -1,6 +1,6 @@
 {
   "name": "erf-analyzer",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "embarrassing relative finder - identify dead code, broken dependencies, and complexity hotspots",
   "type": "module",
   "main": "src/index.js",
