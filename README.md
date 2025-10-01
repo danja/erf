@@ -31,11 +31,13 @@ I think all the code is in place, but not necessarily in the right order. GUI wo
 
 Clone this repo, `cd` into it, run `npm install` then `npm run dev` to start the development server. Then open http://localhost:3000 in your browser.
 
-Add erf as an MCP server to Claude Code:
+...and/or add erf as an MCP server to Claude Code:
 
 ```bash
 claude mcp add erf node /absolute/path/to/erf/bin/erf-mcp.js
 ```
+
+(npx should work)
 
 Or manually edit your MCP configuration file:
 
