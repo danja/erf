@@ -84,26 +84,62 @@ npx erf-analyzer
 
 ### CLI
 
+**Default Command - Comprehensive Analysis:**
+
 ```bash
-# Analyze current directory
-erf analyze
+# Run comprehensive analysis on current directory
+erf .
 
 # Analyze specific directory
-erf analyze /path/to/project
+erf /path/to/project
 
-# Output formats
+# Save report to file (default: erf-report.md)
+erf . -f
+erf . -f custom-report.md
+
+# Export RDF graph as Turtle (default: erf.ttl)
+erf . -r
+erf . -r custom-graph.ttl
+
+# Trace critical path from entry point
+erf . -e bin/index.js
+
+# Combine all flags
+erf . -f report.md -r graph.ttl -e src/main.js
+
+# Use custom config
+erf . -c .erfrc.json
+```
+
+The default command generates a comprehensive markdown report including:
+- Summary statistics (files, functions, imports, exports, dependencies)
+- Health score (0-100) with emoji indicator 🟢🟡🟠🔴
+- Dead code analysis (reachable/dead files, unused exports, reachability %)
+- Top 5 largest files by lines of code
+- Critical path analysis (with `-e` flag)
+- Actionable recommendations
+
+**Specific Analysis Commands:**
+
+```bash
+# Full codebase analysis with JSON/RDF/stats output
+erf analyze [directory]
 erf analyze --format json
 erf analyze --format rdf
-erf analyze --format html
 
-# Find unused code only
-erf dead-code
-
-# Find isolated subgraphs
-erf isolated
+# Find dead code (unreachable files and unused exports)
+erf dead-code [directory]
+erf dead-code --format text
+erf dead-code --format json
 
 # Generate health report
-erf health
+erf health [directory]
+
+# Find isolated subgraphs (disconnected code)
+erf isolated [directory]
+
+# Launch interactive GUI visualization
+erf show [directory]
 ```
 
 ### MCP Server
