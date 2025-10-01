@@ -65,8 +65,8 @@ describe('Full Analysis Integration - erf itself', () => {
 
     // Should find our dependencies
     expect(externalNames.some(name => name.includes('rdf-ext'))).toBe(true)
-    expect(externalNames.some(name => name === 'commander')).toBe(true)
-    expect(externalNames.some(name => name === 'path')).toBe(true)
+    expect(externalNames.some(name => name.includes('commander'))).toBe(true)
+    expect(externalNames.some(name => name.includes('path'))).toBe(true)
   })
 
   it('should export graph in JSON format', async () => {

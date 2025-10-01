@@ -16,10 +16,215 @@ await initLogger({ stdout: true })
 
 const program = new Command()
 
+/**
+ * Generate comprehensive report with dead code, large files, and recommendations
+ */
+function generateComprehensiveReport(targetDir, stats, deadCodeResult, graphBuilder, options) {
+  const lines = []
+
+  lines.push('# Code Analysis Report')
+  lines.push('')
+  lines.push(`**Project:** ${targetDir}`)
+  lines.push(`**Generated:** ${new Date().toISOString()}`)
+  lines.push('')
+
+  // Summary section
+  lines.push('## Summary')
+  lines.push('')
+  lines.push(`- **Total Files:** ${stats.files}`)
+  lines.push(`- **Functions/Methods:** ${stats.functions}`)
+  lines.push(`- **Imports:** ${stats.imports}`)
+  lines.push(`- **Exports:** ${stats.exports}`)
+  lines.push(`- **Entry Points:** ${stats.entryPoints}`)
+  lines.push(`- **External Dependencies:** ${stats.externalModules}`)
+  lines.push('')
+
+  // Health Score
+  const reachabilityScore = deadCodeResult.stats.reachabilityPercentage
+  const connectivityScore = stats.files > 0 ? (stats.imports / stats.files) * 10 : 0
+  const healthScore = Math.round((reachabilityScore * 0.7) + (connectivityScore * 0.3))
+  const healthEmoji = healthScore >= 80 ? '🟢' : healthScore >= 60 ? '🟡' : healthScore >= 40 ? '🟠' : '🔴'
+
+  lines.push('## Health Score')
+  lines.push('')
+  lines.push(`${healthEmoji} **${healthScore}/100**`)
+  lines.push('')
+  lines.push(`- Reachability: ${reachabilityScore}%`)
+  lines.push(`- Connectivity: ${connectivityScore.toFixed(1)} imports/file`)
+  lines.push('')
+
+  // Dead Code Analysis
+  lines.push('## Dead Code Analysis')
+  lines.push('')
+  lines.push(`- **Reachable Files:** ${deadCodeResult.stats.reachableFiles}/${deadCodeResult.stats.totalFiles}`)
+  lines.push(`- **Dead Files:** ${deadCodeResult.stats.deadFiles}`)
+  lines.push(`- **Unused Exports:** ${deadCodeResult.stats.unusedExports}`)
+  lines.push('')
+
+  if (deadCodeResult.deadFiles.length > 0) {
+    lines.push('### Dead Files')
+    lines.push('')
+    deadCodeResult.deadFiles.slice(0, 10).forEach(file => {
+      lines.push(`- \`${file.path}\` - ${file.reason}`)
+    })
+    if (deadCodeResult.deadFiles.length > 10) {
+      lines.push(`- ... and ${deadCodeResult.deadFiles.length - 10} more`)
+    }
+    lines.push('')
+  }
+
+  // Find largest files
+  lines.push('## Largest Files')
+  lines.push('')
+  const files = graphBuilder.getGraph().queryNodesByType('file')
+  const filesWithSize = files.map(f => {
+    const metadata = graphBuilder.getGraph().getNodeMetadata(f.id)
+    return { id: f.id, loc: metadata.loc || 0 }
+  }).filter(f => f.loc > 0).sort((a, b) => b.loc - a.loc).slice(0, 5)
+
+  filesWithSize.forEach((file, idx) => {
+    const filename = file.id.replace('file://', '').replace(targetDir, '.')
+    lines.push(`${idx + 1}. \`${filename}\` - ${file.loc} lines`)
+  })
+  lines.push('')
+
+  // Critical path analysis if entry point specified
+  if (options.entry) {
+    lines.push('## Critical Path Analysis')
+    lines.push('')
+    const entryPath = path.resolve(targetDir, options.entry)
+    const entryUri = `file://${entryPath}`
+
+    const criticalPaths = traceCriticalPaths(graphBuilder.getGraph(), entryUri)
+    if (criticalPaths.length > 0) {
+      lines.push(`Entry point: \`${options.entry}\``)
+      lines.push('')
+      lines.push('### Dependencies (Critical Path)')
+      lines.push('')
+      criticalPaths.slice(0, 20).forEach((dep, idx) => {
+        const depPath = dep.replace('file://', '').replace(targetDir, '.')
+        lines.push(`${idx + 1}. \`${depPath}\``)
+      })
+      if (criticalPaths.length > 20) {
+        lines.push(`... and ${criticalPaths.length - 20} more dependencies`)
+      }
+      lines.push('')
+    } else {
+      lines.push(`⚠️ Entry point not found: ${options.entry}`)
+      lines.push('')
+    }
+  }
+
+  // Recommendations
+  lines.push('## Recommendations')
+  lines.push('')
+
+  if (deadCodeResult.stats.deadFiles > 0) {
+    lines.push(`- 🧹 Remove ${deadCodeResult.stats.deadFiles} dead file(s) to reduce codebase size`)
+  }
+
+  if (filesWithSize[0] && filesWithSize[0].loc > 500) {
+    lines.push(`- 📏 Consider refactoring large files (${filesWithSize.length} files over 500 LOC)`)
+  }
+
+  if (reachabilityScore < 80) {
+    lines.push(`- 🔗 Improve code reachability (currently ${reachabilityScore}%)`)
+  }
+
+  if (stats.entryPoints === 0) {
+    lines.push('- 🚪 Define entry points in `.erfrc.json` for better analysis')
+  }
+
+  if (deadCodeResult.stats.deadFiles === 0 && reachabilityScore === 100) {
+    lines.push('- ✅ No dead code detected! Codebase is clean.')
+  }
+
+  lines.push('')
+
+  return lines.join('\n')
+}
+
+/**
+ * Trace all dependencies from an entry point (critical path)
+ */
+function traceCriticalPaths(graph, entryUri) {
+  const visited = new Set()
+  const result = []
+
+  function traverse(nodeId) {
+    if (visited.has(nodeId)) return
+    visited.add(nodeId)
+
+    if (nodeId !== entryUri && nodeId.startsWith('file://')) {
+      result.push(nodeId)
+    }
+
+    const imports = graph.queryImports(nodeId)
+    for (const imported of imports) {
+      traverse(imported.id)
+    }
+  }
+
+  traverse(entryUri)
+  return result
+}
+
 program
   .name('erf')
   .description('embarrassing relative finder - Code quality and dependency analysis tool')
   .version('0.1.0')
+  .argument('[directory]', 'Directory to analyze (default action: comprehensive report)', '.')
+  .option('-f, --file [filename]', 'Save report to file (default: erf-report.md)')
+  .option('-r, --rdf [filename]', 'Export dependency graph as RDF Turtle (default: erf.ttl)')
+  .option('-e, --entry <file>', 'Entry point file to trace critical paths from')
+  .option('-c, --config <file>', 'Config file path', '.erfrc.json')
+  .action(async (directory, options) => {
+    // Default action: comprehensive analysis report
+    try {
+      const targetDir = path.resolve(process.cwd(), directory)
+      const config = await ErfConfig.load(options.config)
+
+      console.log(`Analyzing: ${targetDir}\n`)
+
+      // Build graph
+      const graphBuilder = new GraphBuilder(config)
+      await graphBuilder.buildGraph(targetDir)
+
+      const stats = graphBuilder.getGraph().getStats()
+      const detector = new DeadCodeDetector(graphBuilder.getGraph())
+      const deadCodeResult = detector.detect()
+
+      // Export to RDF if requested
+      if (options.rdf !== undefined) {
+        const rdfFilename = (typeof options.rdf === 'string') ? options.rdf : 'erf.ttl'
+        const rdfOutput = await graphBuilder.export('rdf')
+        const fs = await import('fs/promises')
+        await fs.writeFile(rdfFilename, rdfOutput)
+        console.log(`✓ RDF exported to: ${rdfFilename}\n`)
+      }
+
+      // Generate comprehensive report
+      let report = generateComprehensiveReport(targetDir, stats, deadCodeResult, graphBuilder, options)
+
+      // Save to file or print to stdout
+      if (options.file !== undefined) {
+        const filename = (typeof options.file === 'string') ? options.file : 'erf-report.md'
+        const fs = await import('fs/promises')
+        await fs.writeFile(filename, report)
+        console.log(`✓ Report saved to: ${filename}`)
+      } else {
+        console.log(report)
+      }
+
+      // Exit with error if significant issues found
+      if (deadCodeResult.stats.deadFiles > 10 || deadCodeResult.stats.reachabilityPercentage < 70) {
+        process.exit(1)
+      }
+    } catch (error) {
+      console.error(`Error: ${error.message}`)
+      process.exit(1)
+    }
+  })
 
 /**
  * Analyze command - Full codebase analysis

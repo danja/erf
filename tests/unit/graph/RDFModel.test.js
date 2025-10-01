@@ -67,10 +67,12 @@ describe('RDFModel', () => {
       const functions = model.queryNodesByType('function')
       expect(functions.length).toBe(1)
 
-      const functionNode = model._getOrCreateNode(`urn:erf:${functionId.replace(/\/g, ':')}`)
+      // Function ID starting with / becomes file:// URI
+      const functionNode = model._getOrCreateNode(`file://${functionId}`)
       const triples = model.getNodeTriples(functionNode)
-      
+
       const labelTriple = triples.find(t => t.predicate.value === 'http://www.w3.org/2000/01/rdf-schema#label')
+      expect(labelTriple).toBeDefined()
       expect(labelTriple.object.value).toBe('myFunction')
     })
   })

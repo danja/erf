@@ -236,10 +236,11 @@ export class GraphBuilder {
 
     for (const entryPoint of entryPoints) {
       const absolutePath = path.resolve(rootDir, entryPoint)
+      const fileUri = `file://${absolutePath}`
 
       // Check if entry point exists in graph
       const files = this.rdfModel.queryNodesByType('file')
-      const fileExists = files.some(f => f.id === absolutePath)
+      const fileExists = files.some(f => f.id === fileUri)
 
       if (fileExists) {
         this.rdfModel.markAsEntryPoint(absolutePath)
@@ -253,15 +254,64 @@ export class GraphBuilder {
     if (entryPoints.length === 0) {
       const inferred = await this._inferEntryPointsFromPackageJson(rootDir)
 
-      // If still no entry points, treat all files as potential entry points
+      // If still no entry points, find files with no incoming imports
       if (inferred === 0) {
-        console.log('  No entry points found, treating all files as potential entry points')
-        const files = this.rdfModel.queryNodesByType('file')
-        for (const file of files) {
-          this.rdfModel.markAsEntryPoint(file.id)
+        console.log('  No configured entry points, auto-detecting files with no incoming imports...')
+        const autoDetected = this._autoDetectEntryPoints()
+
+        if (autoDetected === 0) {
+          console.log('  No entry points found, treating all files as potential entry points')
+          const files = this.rdfModel.queryNodesByType('file')
+          for (const file of files) {
+            this.rdfModel.markAsEntryPoint(file.id)
+          }
+        } else {
+          console.log(`  Auto-detected ${autoDetected} entry point(s) based on import analysis`)
+        }
+      }
+    } else {
+      // Config has entry points, but also auto-detect additional ones
+      console.log('  Also checking for files with no incoming imports...')
+      this._autoDetectEntryPoints()
+    }
+  }
+
+  /**
+   * Auto-detect entry points by finding files with no incoming imports
+   * These are files that no other file depends on, likely true entry points
+   * @private
+   * @returns {number} Number of entry points auto-detected
+   */
+  _autoDetectEntryPoints() {
+    const files = this.rdfModel.queryNodesByType('file')
+    const allImportTargets = new Set()
+
+    // Collect all files that are imported by other files
+    for (const file of files) {
+      const imports = this.rdfModel.queryImports(file.id)
+      for (const imported of imports) {
+        // Only track imports to other source files (not external modules)
+        if (imported.id.startsWith('file://')) {
+          allImportTargets.add(imported.id)
         }
       }
     }
+
+    // Files with no incoming imports are potential entry points
+    let count = 0
+    for (const file of files) {
+      if (!allImportTargets.has(file.id)) {
+        // This file is not imported by any other file
+        this.rdfModel.markAsEntryPoint(file.id)
+        count++
+
+        // Extract just the filename for cleaner logging
+        const filename = file.id.replace('file://', '').split('/').pop()
+        console.log(`  Auto-detected entry point: ${filename}`)
+      }
+    }
+
+    return count
   }
 
   /**
