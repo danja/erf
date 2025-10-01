@@ -1,6 +1,6 @@
 # erf - Embarrassing Relative Finder
 
-A code quality and dependency analysis tool that helps identify unused code, broken dependencies, isolated subgraphs, and complexity hotspots in your codebase. Now you can determine who you shouldn't invite to the wedding.
+A Javascript code quality and dependency analysis tool that helps identify unused code, broken dependencies, isolated subgraphs, and complexity hotspots in your codebase. Now you can determine who you shouldn't invite to the wedding.
 
 ![Screenshot](docs/screenshot.png)
 
