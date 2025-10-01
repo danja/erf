@@ -69,7 +69,7 @@ export class GraphBuilder {
       this.rdfModel.addFile(file.path, {
         size: file.size,
         mtime: file.modified,
-        loc: this._countLOC(file.path),
+        loc: await this._countLOC(file.path),
         parseError: dependencies.error ? true : false,
         parseErrorMessage: dependencies.error || undefined
       })
@@ -351,13 +351,32 @@ export class GraphBuilder {
   }
 
   /**
-   * Count lines of code in a file (placeholder - could be enhanced)
+   * Count lines of code in a file
    * @private
    */
-  _countLOC(filePath) {
-    // For now, return undefined - could implement actual LOC counting
-    // Would need to read file and count non-empty, non-comment lines
-    return undefined
+  async _countLOC(filePath) {
+    try {
+      // Use fs/promises for async file reading in ES module context
+      const fs = await import('fs/promises')
+      const content = await fs.readFile(filePath, 'utf8')
+
+      // Split into lines and filter out empty lines and comments
+      const lines = content.split('\n')
+
+      let loc = 0
+      for (const line of lines) {
+        const trimmed = line.trim()
+        // Count non-empty lines that aren't just comments
+        if (trimmed.length > 0 && !trimmed.startsWith('//') && !trimmed.startsWith('/*') && !trimmed.startsWith('*')) {
+          loc++
+        }
+      }
+
+      return loc
+    } catch (error) {
+      logger.warn(`Could not count LOC for ${filePath}: ${error.message}`)
+      return 0
+    }
   }
 
   /**
@@ -391,7 +410,8 @@ export class GraphBuilder {
         importCount: imports.length,
         exportCount: exports.length,
         dependentCount: dependents.length,
-        size: parseInt(metadata.size) || 0
+        size: parseInt(metadata.size) || 0,
+        loc: parseInt(metadata.loc) || 0
       })
 
       // Add import edges

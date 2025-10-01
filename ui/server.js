@@ -56,23 +56,15 @@ app.post('/api/analyze', async (req, res) => {
       (stats.files > 0 ? Math.min((stats.imports / stats.files) * 10, 30) : 0)
     )
 
-    // Mark dead nodes and add LOC
-    const fs = await import('fs').then(m => m.promises)
+    // Mark dead nodes (LOC is already calculated in GraphBuilder)
     for (const node of json.nodes) {
       const isDead = deadCodeResult.deadFiles.some(f => f.path === node.id)
       if (isDead) {
         node.isDead = true
       }
 
-      // Calculate LOC for file nodes
-      if (node.type === 'file' && node.id) {
-        try {
-          const content = await fs.readFile(node.id, 'utf8')
-          node.metadata.loc = content.split('\n').length
-        } catch (err) {
-          // File might not exist or be readable, skip
-        }
-      }
+      // LOC is already calculated in the GraphBuilder and included in metadata
+      // No need to recalculate here
     }
 
     res.json({

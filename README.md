@@ -2,6 +2,8 @@
 
 A code quality and dependency analysis tool that helps identify unused code, broken dependencies, isolated subgraphs, and complexity hotspots in your codebase.
 
+![Screenshot](docs/screenshot.png)
+
 ## Overview
 
 **erf** analyzes JavaScript/Node.js projects to find code quality issues that might be embarrassing if discovered by others:
@@ -20,25 +22,10 @@ erf is designed as a standalone Node.js tool with three interfaces:
 2. **MCP Server** - Model Context Protocol integration for AI assistants
 3. **Web GUI** - Interactive force-directed graph visualization
 
-### RDF-Based Graph Model
 
-Uses RDF-Ext to model code structure as a semantic graph with custom ontology:
+## Quick Start
 
-```turtle
-@prefix erf: <http://purl.org/stuff/erf/> .
-@prefix code: <http://purl.org/stuff/code/> .
-
-# Nodes
-erf:File, erf:Module, erf:Function, erf:Class, erf:Variable
-
-# Edges
-erf:imports, erf:exports, erf:calls, erf:extends, erf:references
-
-# Properties
-code:loc, code:complexity, code:lastModified, erf:isEntryPoint, erf:isExternal
-```
-
-## Quick Start: Using with Claude Code
+Clone this repo, `cd` into it, run `npm install` then `npm run dev` to start the development server. Then open http://localhost:3000 in your browser.
 
 Add erf as an MCP server to Claude Code:
 
@@ -147,30 +134,23 @@ Create `.erfrc.json` in your project root:
   }
 }
 ```
+### RDF-Based Graph Model
 
-## Features
+Uses RDF-Ext to model code structure as a semantic graph with custom ontology:
 
-### Unused Code Detection
+```turtle
+@prefix erf: <http://purl.org/stuff/erf/> .
+@prefix code: <http://purl.org/stuff/code/> .
 
-- **Semantic unused code** - Modules imported but never used
-- **Unreachable functions** - Not called from any entry point
-- **Unused exports** - Exported but never imported
-- **Orphaned files** - Not in dependency graph
+# Nodes
+erf:File, erf:Module, erf:Function, erf:Class, erf:Variable
 
-### Dependency Analysis
+# Edges
+erf:imports, erf:exports, erf:calls, erf:extends, erf:references
 
-- ES modules (`import`/`export`)
-- CommonJS (`require`/`module.exports`)
-- Dynamic imports
-- Circular dependency detection
-- Missing module resolution
-
-### Complexity Metrics
-
-- Lines of code (LOC)
-- Cyclomatic complexity
-- Dependency depth
-- Fan-in/fan-out analysis
+# Properties
+code:loc, code:complexity, code:lastModified, erf:isEntryPoint, erf:isExternal
+```
 
 ### Web GUI
 
