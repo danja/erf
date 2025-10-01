@@ -11,16 +11,16 @@
   "scripts": {
     "analyze": "node bin/erf.js analyze",
     "api": "node ui/server.js",
-    "gui": "vite --config ui/vite.config.js",
+    "gui": "cd ui && vite",
     "dev": "npm run api & sleep 2 && npm run gui",
-    "build": "vite build --config ui/vite.config.js",
-    "preview": "vite preview --config ui/vite.config.js",
+    "build": "cd ui && vite build",
+    "preview": "cd ui && vite preview",
     "mcp": "node bin/erf-mcp.js",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "test:unit": "vitest run tests/unit",
-    "test:integration": "vitest run tests/integration",
-    "test:coverage": "vitest run --coverage",
+    "test": "npx vitest run",
+    "test:watch": "npx vitest",
+    "test:unit": "npx vitest run tests/unit",
+    "test:integration": "npx vitest run tests/integration",
+    "test:coverage": "npx vitest run --coverage",
     "test:e2e": "playwright test"
   },
   "keywords": [
@@ -37,9 +37,11 @@
     "@babel/parser": "^7.26.3",
     "@modelcontextprotocol/sdk": "^0.6.1",
     "@rdfjs/dataset": "^2.0.1",
+    "@rdfjs/serializer-turtle": "^1.1.5",
     "acorn": "^8.14.0",
     "acorn-walk": "^8.3.4",
     "commander": "^12.1.0",
+    "d3": "^7.9.0",
     "express": "^4.21.2",
     "glob": "^11.0.0",
     "ignore": "^6.0.2",
@@ -49,10 +51,9 @@
   "devDependencies": {
     "@playwright/test": "^1.49.1",
     "@vitejs/plugin-vue": "^5.2.1",
-    "d3": "^7.9.0",
     "pinia": "^2.2.8",
     "vite": "^6.0.5",
-    "vitest": "^2.1.8",
+    "vitest": "^1.6.0",
     "vue": "^3.5.13"
   },
   "engines": {

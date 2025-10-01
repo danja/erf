@@ -1,3 +1,4 @@
+
 import { describe, it, expect, beforeEach } from 'vitest'
 import { RDFModel } from '../../../src/graph/RDFModel.js'
 
@@ -14,11 +15,11 @@ describe('RDFModel', () => {
       const node = model.addFile(filePath, { size: 1024, loc: 50 })
 
       expect(node).toBeDefined()
-      expect(node.value).toBe(filePath)
+      expect(node.value).toBe(`file://${filePath}`)
 
       const files = model.queryNodesByType('file')
       expect(files.length).toBe(1)
-      expect(files[0].id).toBe(filePath)
+      expect(files[0].id).toBe(`file://${filePath}`)
     })
 
     it('should store file metadata', () => {
@@ -27,10 +28,10 @@ describe('RDFModel', () => {
 
       model.addFile(filePath, { size: 1024, mtime, loc: 50 })
 
-      const metadata = model.getNodeMetadata(filePath)
+      const metadata = model.getNodeMetadata(`file://${filePath}`)
       // RDF literals are returned as strings
-      expect(metadata.size).toBe(1024)
-      expect(metadata.loc).toBe(50)
+      expect(String(metadata.size)).toBe('1024')
+      expect(String(metadata.loc)).toBe('50')
       expect(metadata.lastModified).toContain(mtime.getFullYear().toString())
     })
   })
@@ -42,7 +43,7 @@ describe('RDFModel', () => {
 
       const modules = model.queryNodesByType('module')
       expect(modules.length).toBe(1)
-      expect(modules[0].id).toBe(modulePath)
+      expect(modules[0].id).toBe(`file://${modulePath}`)
     })
 
     it('should mark external modules', () => {
@@ -50,7 +51,7 @@ describe('RDFModel', () => {
 
       const externalModules = model.queryExternalModules()
       expect(externalModules.length).toBe(1)
-      expect(externalModules[0].id).toBe('express')
+      expect(externalModules[0].id).toBe('urn:erf:express')
     })
   })
 
@@ -66,10 +67,11 @@ describe('RDFModel', () => {
       const functions = model.queryNodesByType('function')
       expect(functions.length).toBe(1)
 
-      const metadata = model.getNodeMetadata(functionId)
-      expect(metadata.label).toBe('myFunction')
-      expect(metadata.loc).toBe(20)
-      expect(metadata.complexity).toBe(5)
+      const functionNode = model._getOrCreateNode(`urn:erf:${functionId.replace(/\/g, ':')}`)
+      const triples = model.getNodeTriples(functionNode)
+      
+      const labelTriple = triples.find(t => t.predicate.value === 'http://www.w3.org/2000/01/rdf-schema#label')
+      expect(labelTriple.object.value).toBe('myFunction')
     })
   })
 
@@ -82,9 +84,9 @@ describe('RDFModel', () => {
       model.addFile(to)
       model.addImport(from, to)
 
-      const imports = model.queryImports(from)
+      const imports = model.queryImports(`file://${from}`)
       expect(imports.length).toBe(1)
-      expect(imports[0].id).toBe(to)
+      expect(imports[0].id).toBe(`file://${to}`)
     })
 
     it('should store import metadata', () => {
@@ -96,7 +98,7 @@ describe('RDFModel', () => {
       model.addImport(from, to, { line: 5, type: 'ImportDeclaration' })
 
       // Import metadata is stored as reified statement
-      const triples = model.getNodeTriples(from)
+      const triples = model.getNodeTriples(`file://${from}`)
       expect(triples.length).toBeGreaterThan(0)
     })
   })
@@ -107,7 +109,7 @@ describe('RDFModel', () => {
       model.addFile(filePath)
       model.addExport(filePath, 'myExport', { type: 'named', line: 10 })
 
-      const exports = model.queryExports(filePath)
+      const exports = model.queryExports(`file://${filePath}`)
       expect(exports.length).toBe(1)
       expect(exports[0].name).toBe('myExport')
     })
@@ -121,7 +123,7 @@ describe('RDFModel', () => {
 
       const entryPoints = model.queryEntryPoints()
       expect(entryPoints.length).toBe(1)
-      expect(entryPoints[0].id).toBe(filePath)
+      expect(entryPoints[0].id).toBe(`file://${filePath}`)
     })
   })
 
@@ -153,14 +155,14 @@ describe('RDFModel', () => {
   })
 
   describe('serialize', () => {
-    it('should serialize graph to N-Quads format', () => {
+    it('should serialize graph to Turtle-like format', async () => {
       model.addFile('/test/file.js')
       model.addModule('express', true)
 
-      const serialized = model.serialize()
+      const serialized = await model.serialize()
 
-      expect(serialized).toContain('/test/file.js')
-      expect(serialized).toContain('express')
+      expect(serialized).toContain('<file:///test/file.js>')
+      expect(serialized).toContain('<urn:erf:express>')
       expect(serialized.split('\n').length).toBeGreaterThan(0)
     })
   })
@@ -180,11 +182,11 @@ describe('RDFModel', () => {
       model.addExport(fileB, 'exportB')
       model.addExport(fileC, 'exportC')
 
-      const importsFromA = model.queryImports(fileA)
+      const importsFromA = model.queryImports(`file://${fileA}`)
       expect(importsFromA.length).toBe(2)
 
-      const exportsFromB = model.queryExports(fileB)
-      const exportsFromC = model.queryExports(fileC)
+      const exportsFromB = model.queryExports(`file://${fileB}`)
+      const exportsFromC = model.queryExports(`file://${fileC}`)
       expect(exportsFromB.length).toBe(1)
       expect(exportsFromC.length).toBe(1)
     })

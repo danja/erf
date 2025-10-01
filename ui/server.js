@@ -44,7 +44,7 @@ app.post('/api/analyze', async (req, res) => {
 
     // Get graph data
     const stats = graphBuilder.getGraph().getStats()
-    const json = graphBuilder.export('json')
+    const json = await graphBuilder.export('json')
 
     // Run dead code analysis
     const detector = new DeadCodeDetector(graphBuilder.getGraph())
@@ -117,7 +117,7 @@ app.post('/api/export-rdf', async (req, res) => {
     await graphBuilder.buildGraph(targetDir)
 
     // Export as Turtle
-    const turtle = graphBuilder.export('rdf')
+    const turtle = await graphBuilder.export('rdf')
 
     res.setHeader('Content-Type', 'text/turtle')
     res.send(turtle)

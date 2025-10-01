@@ -379,12 +379,28 @@ export class RDFModel {
   }
 
   /**
-   * Export dataset as N-Quads string
-   * @returns {string} Serialized RDF in N-Quads format
+   * Export dataset as Turtle string
+   * @returns {Promise<string>} A promise that resolves with the serialized RDF in Turtle format
    */
-  serialize() {
+  async serialize() {
     const quads = [...this.dataset]
-    return quads.map(q => `${q.subject.value} ${q.predicate.value} ${q.object.value} .`).join('\n')
+    const lines = quads.map(q => {
+      const subject = q.subject.termType === 'NamedNode' ? `<${q.subject.value}>` : `_:${q.subject.value}`;
+      const predicate = `<${q.predicate.value}>`;
+      let object;
+      if (q.object.termType === 'NamedNode') {
+        object = `<${q.object.value}>`;
+      } else if (q.object.termType === 'Literal') {
+        object = `"${q.object.value}"`;
+        if (q.object.datatype) {
+          object += `^^<${q.object.datatype.value}>`;
+        }
+      } else {
+        object = `_:${q.object.value}`;
+      }
+      return `${subject} ${predicate} ${object} .`;
+    });
+    return lines.join('\n');
   }
 
   /**
@@ -425,7 +441,18 @@ export class RDFModel {
   // Private helper methods
 
   _createNode(id) {
-    return rdf.namedNode(id)
+    if (id.startsWith('http://') || id.startsWith('https://') || id.startsWith('file://')) {
+      return rdf.namedNode(id)
+    }
+    if (id.startsWith('/')) {
+      return rdf.namedNode(`file://${id}`)
+    }
+    // For package names and other identifiers, create a URN
+    // This ensures valid IRIs for all identifiers
+    if (id.includes(':')) {
+      return rdf.namedNode(id)
+    }
+    return rdf.namedNode(`urn:erf:${id.replace(/\//g, ':')}`)
   }
 
   _getOrCreateNode(idOrNode) {

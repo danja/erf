@@ -212,12 +212,12 @@ export class GraphBuilder {
    * @param {string} format - Format: 'json', 'rdf', 'stats'
    * @returns {string|Object} Serialized graph
    */
-  export(format = 'json') {
+  async export(format = 'json') {
     switch (format) {
       case 'json':
         return this._exportJSON()
       case 'rdf':
-        return this.rdfModel.serialize()
+        return await this.rdfModel.serialize()
       case 'stats':
         return this.rdfModel.getStats()
       default:

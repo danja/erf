@@ -20,7 +20,7 @@ import path from 'path'
 /**
  * MCP Server for erf code analysis
  */
-class ErfMCPServer {
+export class ErfMCPServer {
   constructor() {
     this.server = new Server(
       {

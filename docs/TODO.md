@@ -1,9 +1,5 @@
  
- the node radius doesn't appear to correspond to the size of the file 
- bad relations should show up large, red, isolated 
-
-
- are both acorn and babel used for parsing?
-
- identify critical paths somehow? 
-
+* tests
+* somehow highlight critical paths
+* jsdoc needed?
+* when clicking on a node, in the Metadata panel, the system did display file size additionally as lines of codes, but that line appears to have vanished

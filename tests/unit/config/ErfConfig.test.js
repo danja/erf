@@ -62,7 +62,7 @@ describe('ErfConfig', () => {
     it('should have sensible default entry points', async () => {
       const config = await ErfConfig.load('nonexistent.json')
 
-      expect(config.entryPoints).toContain('src/index.js')
+      expect(config.entryPoints).toContain('bin/erf.js')
     })
 
     it('should ignore node_modules by default', async () => {

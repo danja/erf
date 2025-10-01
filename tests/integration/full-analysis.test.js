@@ -75,7 +75,7 @@ describe('Full Analysis Integration - erf itself', () => {
     const graphBuilder = new GraphBuilder(config)
     await graphBuilder.buildGraph(erfRoot)
 
-    const json = graphBuilder.export('json')
+    const json = await graphBuilder.export('json')
 
     expect(json.nodes).toBeDefined()
     expect(json.edges).toBeDefined()
@@ -103,7 +103,7 @@ describe('Full Analysis Integration - erf itself', () => {
     const graphBuilder = new GraphBuilder(config)
     await graphBuilder.buildGraph(erfRoot)
 
-    const stats = graphBuilder.export('stats')
+    const stats = await graphBuilder.export('stats')
 
     expect(stats.totalTriples).toBeGreaterThan(0)
     expect(stats.files).toBeGreaterThan(0)

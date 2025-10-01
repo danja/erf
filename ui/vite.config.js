@@ -1,8 +1,6 @@
-import { defineConfig } from 'vite'
 import path from 'path'
 
-export default defineConfig({
-  root: path.resolve(__dirname),
+export default {
   server: {
     port: 3000,
     open: true
@@ -11,4 +9,4 @@ export default defineConfig({
     outDir: 'dist',
     emptyOutDir: true
   }
-})
+}
