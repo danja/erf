@@ -29,9 +29,17 @@ I think all the code is in place, but not necessarily in the right order. GUI wo
 
 ## Quick Start
 
+### GUI
+
 Clone this repo, `cd` into it, run `npm install` then `npm run dev` to start the development server. Then open http://localhost:3000 in your browser.
 
-...and/or add erf as an MCP server to Claude Code:
+### CLI
+
+`npm install -g erf-analyzer`
+
+run `erf`
+
+### MCP
 
 ```bash
 claude mcp add erf node /absolute/path/to/erf/bin/erf-mcp.js
