@@ -2,6 +2,13 @@
 
 A Javascript code quality and dependency analysis tool that helps identify unused code, broken dependencies, isolated subgraphs, and complexity hotspots in your codebase. Now you can determine who you shouldn't invite to the wedding.
 
+  **When ERF tools may be useful:**
+
+  1. Pre-refactoring planning - Know which files are hubs before making changes
+  2. Code cleanup - Find genuinely unused code
+  3. Understanding impact - See how many files depend on a module before modifying it
+  4. Tracking tech debt - Monitor health score and missing imports over time
+
 ![Screenshot](docs/screenshot.png)
 
 ## Overview
@@ -23,9 +30,9 @@ erf is designed as a standalone Node.js tool with three interfaces:
 3. **Web GUI** - Interactive force-directed graph visualization
 4. **CLI** 
 
-## Status : 2025-10-01
+## Status : 2025-10-02
 
-I think all the code is in place, but not necessarily in the right order. GUI works a treat, MCP needs testing, CLI is only a fragment.
+It all appears to basically work on my setup, ymmv. Gives a very optimistic view of a particular codebase I know is messy, so take reports with a pinch of salt.
 
 ## Quick Start
 
@@ -67,18 +74,38 @@ Or manually edit your MCP configuration file:
 }
 ```
 
-**Available MCP Tools:**
-- `erf_analyze` - Analyze codebase and get statistics
-- `erf_dead_code` - Find unreachable code
-- `erf_health` - Get health score (0-100)
-- `erf_isolated` - Find isolated subgraphs
+---
 
-**Example usage in Claude Code:**
-```
-Ask Claude: "Use erf_analyze to analyze this project"
-Ask Claude: "Use erf_dead_code to find unused code"
-Ask Claude: "Use erf_health to get a health report"
-```
+**the following was what Claude suggested I put in CLAUDE.md after trying the MCP tools:**
+
+### Using MCP ERF Tools for Codebase Analysis 
+
+The ERF (Entity Relationship Framework) MCP tools provide powerful static analysis capabilities for understanding codebase structure and health:
+
+**Available Tools:**
+- `mcp__erf__erf_analyze` - Generate comprehensive codebase statistics (files, modules, functions, imports, exports)
+- `mcp__erf__erf_health` - Get overall health score (0-100) with connectivity, structure, and quality metrics
+- `mcp__erf__erf_dead_code` - Find unreachable files and unused exports
+- `mcp__erf__erf_isolated` - Identify code subgraphs with no connection to entry points
+- `mcp__erf__erf_hubs` - Find hub files (core infrastructure that many files depend on)
+- `mcp__erf__erf_functions` - Analyze function/method distribution and complexity
+
+**When to Use ERF Tools:**
+- **Before major refactoring** - Use `erf_health` to get baseline metrics, `erf_hubs` to identify critical files needing extra testing
+- **During code cleanup** - Use `erf_dead_code` and `erf_isolated` to find candidates for removal
+- **After architecture changes** - Use `erf_analyze` to verify import/export structure, check connectivity
+- **Identifying technical debt** - Use `erf_health` to track missing imports, isolated files over time
+- **Understanding unfamiliar codebases** - Use `erf_hubs` to find the most important files to study first
+
+**Example Results from Semem:**
+- Health Score: 63/100 (Good) - 567/589 files connected, 22 isolated, 53 missing imports
+- Top Hubs: Config.js (125 dependents), SPARQLHelper.js (77 dependents), Utils.js (50 dependents)
+- Dead Code: 0 dead files, 302 unused exports, 100% reachability
+- Functions: 5833 functions across 589 files (avg 9.9 per file)
+
+These tools are **faster and more accurate than text search** for architectural questions, and complement Gemini CLI which is better for semantic code understanding.
+
+---
 
 ## Installation
 
