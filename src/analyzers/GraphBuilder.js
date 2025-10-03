@@ -278,7 +278,7 @@ export class GraphBuilder {
 
   /**
    * Auto-detect entry points by finding files with no incoming imports
-   * These are files that no other file depends on, likely true entry points
+   * Uses heuristics to distinguish genuine entry points from dead code
    * @private
    * @returns {number} Number of entry points auto-detected
    */
@@ -298,20 +298,67 @@ export class GraphBuilder {
     }
 
     // Files with no incoming imports are potential entry points
+    // But we need to distinguish genuine entry points from dead code
     let count = 0
     for (const file of files) {
       if (!allImportTargets.has(file.id)) {
         // This file is not imported by any other file
-        this.rdfModel.markAsEntryPoint(file.id)
-        count++
+        // Check if it's likely a real entry point (not dead code)
+        if (this._isLikelyEntryPoint(file.id)) {
+          this.rdfModel.markAsEntryPoint(file.id)
+          count++
 
-        // Extract just the filename for cleaner logging
-        const filename = file.id.replace('file://', '').split('/').pop()
-        console.log(`  Auto-detected entry point: ${filename}`)
+          // Extract just the filename for cleaner logging
+          const filename = file.id.replace('file://', '').split('/').pop()
+          console.log(`  Auto-detected entry point: ${filename}`)
+        }
       }
     }
 
     return count
+  }
+
+  /**
+   * Determine if a file with no incoming imports is likely an entry point vs dead code
+   * @private
+   * @param {string} fileId - File URI
+   * @returns {boolean} True if likely an entry point
+   */
+  _isLikelyEntryPoint(fileId) {
+    const relativePath = fileId.replace('file://', '')
+
+    // Get custom patterns from config if available
+    const customPatterns = this.config.entryPointPatterns || []
+
+    // Default entry point patterns
+    const defaultPatterns = [
+      /\/bin\//,              // bin scripts
+      /\/scripts?\//,         // script directories
+      /server\.js$/,          // servers
+      /main\.js$/,            // main entry
+      /app\.js$/,             // app entry
+      /index\.js$/,           // index files (at root level)
+      /\.config\.(js|mjs|cjs|ts)$/,  // config files
+      /\/(tests?|specs?|__tests__|__specs__)\//i,  // test directories
+      /\.(test|spec)\.(js|mjs|cjs|ts)$/,  // test files
+    ]
+
+    const allPatterns = [...defaultPatterns, ...customPatterns]
+
+    // 1. Check if matches known entry point patterns
+    if (allPatterns.some(pattern => pattern.test(relativePath))) {
+      return true
+    }
+
+    // 2. Check if file has exports
+    // If a file has exports but no one imports it, it's likely dead code, not an entry point
+    const exports = this.rdfModel.queryExports(fileId)
+    if (exports.length > 0) {
+      return false // Has exports but no imports = dead code
+    }
+
+    // 3. Files with no imports and no exports are likely executable scripts
+    return true
   }
 
   /**

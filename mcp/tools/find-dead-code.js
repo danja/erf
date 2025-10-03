@@ -30,7 +30,11 @@ export async function handleDeadCode(args) {
     }
   }
 
-  // JSON format
+  // JSON format - convert file:// URIs to ./ relative paths
+  const formatPath = (filePath) => {
+    return filePath.replace('file://', '').replace(targetDir, '.')
+  }
+
   return {
     content: [
       {
@@ -45,7 +49,7 @@ export async function handleDeadCode(args) {
 - Reachability: ${result.stats.reachabilityPercentage}%
 
 ## Dead Files (${result.deadFiles.length})
-${result.deadFiles.length > 0 ? result.deadFiles.map(f => `- ${f.path}\n  Reason: ${f.reason}`).join('\n') : 'None found!'}
+${result.deadFiles.length > 0 ? result.deadFiles.map(f => `- ${formatPath(f.path)}\n  Reason: ${f.reason}`).join('\n') : 'None found!'}
 
 ${result.deadFiles.length > 0 ? '⚠️ Consider removing or investigating these files.' : '✅ All files are reachable from entry points.'}`
       }

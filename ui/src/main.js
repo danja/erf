@@ -71,7 +71,7 @@ class ErfUI {
       this.visualizer.render(data)
 
       // Update stats and health
-      this.updateStats(data.stats)
+      this.updateStats(data.stats, data.duplicates)
       this.updateHealth(data.health)
 
       // Enable export button
@@ -111,7 +111,15 @@ class ErfUI {
     }
   }
 
-  updateStats(stats) {
+  updateStats(stats, duplicates) {
+    let duplicateInfo = ''
+    if (duplicates && duplicates.stats) {
+      duplicateInfo = `
+        <p><strong>Duplicate Methods:</strong> ${duplicates.stats.duplicateGroups}</p>
+        <p><strong>Code Redundancy:</strong> ${(duplicates.stats.redundancyScore * 100).toFixed(1)}%</p>
+      `
+    }
+
     this.elements.stats.innerHTML = `
       <p><strong>Files:</strong> ${stats.files}</p>
       <p><strong>Modules:</strong> ${stats.modules}</p>
@@ -119,6 +127,7 @@ class ErfUI {
       <p><strong>Exports:</strong> ${stats.exports}</p>
       <p><strong>Entry Points:</strong> ${stats.entryPoints}</p>
       <p><strong>External Modules:</strong> ${stats.externalModules}</p>
+      ${duplicateInfo}
     `
   }
 

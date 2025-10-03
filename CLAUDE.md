@@ -119,10 +119,19 @@ All tools accept:
 
 ## CLI Commands
 
-- `erf analyze [directory]` - Analyze and generate dependency graph
+**Default command (no subcommand):**
+- `erf [directory]` - Generate comprehensive markdown report with health score, dead code, duplicates, and recommendations
+  - `erf` or `erf .` - Analyze current directory (prints to stdout)
+  - `erf --file report.md` - Save report to file
+  - `erf --rdf graph.ttl` - Export RDF graph
+  - `erf --entry src/main.js` - Trace critical path from entry point
+
+**Specific analysis commands:**
+- `erf analyze [directory]` - Analyze and generate dependency graph (JSON/RDF output)
 - `erf dead-code [directory]` - Find dead code
 - `erf health [directory]` - Generate health report
 - `erf isolated [directory]` - Find isolated subgraphs
+- `erf duplicates [directory]` - Find duplicate method/function names
 - `erf init` - Create default .erfrc.json
 
 **Adding new CLI commands:**

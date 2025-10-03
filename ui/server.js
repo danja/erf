@@ -1,6 +1,7 @@
 import express from 'express'
 import { GraphBuilder } from '../src/analyzers/GraphBuilder.js'
 import { DeadCodeDetector } from '../src/analyzers/DeadCodeDetector.js'
+import { DuplicateDetector } from '../src/analyzers/DuplicateDetector.js'
 import { ErfConfig } from '../src/config/ErfConfig.js'
 import { initLogger } from '../src/utils/Logger.js'
 import path from 'path'
@@ -50,11 +51,18 @@ app.post('/api/analyze', async (req, res) => {
     const detector = new DeadCodeDetector(graphBuilder.getGraph())
     const deadCodeResult = detector.detect()
 
-    // Calculate health score
-    const healthScore = Math.round(
-      (deadCodeResult.stats.reachabilityPercentage * 0.7) +
-      (stats.files > 0 ? Math.min((stats.imports / stats.files) * 10, 30) : 0)
-    )
+    // Run duplicate detection
+    const duplicateDetector = new DuplicateDetector(graphBuilder.getGraph(), {
+      threshold: 2,
+      ignoreCommon: true
+    })
+    const duplicateResult = duplicateDetector.detect()
+
+    // Calculate health score (including redundancy penalty)
+    const reachabilityScore = deadCodeResult.stats.reachabilityPercentage
+    const connectivityScore = stats.files > 0 ? Math.min((stats.imports / stats.files) * 10, 30) : 0
+    const redundancyPenalty = duplicateResult.stats.redundancyScore * 10
+    const healthScore = Math.max(0, Math.round((reachabilityScore * 0.7) + connectivityScore - redundancyPenalty))
 
     // Mark dead nodes (LOC is already calculated in GraphBuilder)
     for (const node of json.nodes) {
@@ -77,7 +85,12 @@ app.post('/api/analyze', async (req, res) => {
       },
       health: {
         score: healthScore,
-        reachability: deadCodeResult.stats.reachabilityPercentage
+        reachability: deadCodeResult.stats.reachabilityPercentage,
+        redundancy: duplicateResult.stats.redundancyScore
+      },
+      duplicates: {
+        groups: duplicateResult.duplicates.slice(0, 10), // Top 10
+        stats: duplicateResult.stats
       }
     })
   } catch (error) {

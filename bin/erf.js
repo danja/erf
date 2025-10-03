@@ -18,9 +18,9 @@ await initLogger({ stdout: true })
 const program = new Command()
 
 /**
- * Generate comprehensive report with dead code, large files, and recommendations
+ * Generate comprehensive report with dead code, large files, duplicates, and recommendations
  */
-function generateComprehensiveReport(targetDir, stats, deadCodeResult, graphBuilder, options) {
+function generateComprehensiveReport(targetDir, stats, deadCodeResult, duplicateResult, graphBuilder, options) {
   const lines = []
 
   lines.push('# Code Analysis Report')
@@ -40,10 +40,11 @@ function generateComprehensiveReport(targetDir, stats, deadCodeResult, graphBuil
   lines.push(`- **External Dependencies:** ${stats.externalModules}`)
   lines.push('')
 
-  // Health Score
+  // Health Score (now includes redundancy)
   const reachabilityScore = deadCodeResult.stats.reachabilityPercentage
   const connectivityScore = stats.files > 0 ? (stats.imports / stats.files) * 10 : 0
-  const healthScore = Math.round((reachabilityScore * 0.7) + (connectivityScore * 0.3))
+  const redundancyPenalty = duplicateResult.stats.redundancyScore * 10 // 0-10 point penalty
+  const healthScore = Math.max(0, Math.round((reachabilityScore * 0.7) + (connectivityScore * 0.3) - redundancyPenalty))
   const healthEmoji = healthScore >= 80 ? '🟢' : healthScore >= 60 ? '🟡' : healthScore >= 40 ? '🟠' : '🔴'
 
   lines.push('## Health Score')
@@ -52,6 +53,7 @@ function generateComprehensiveReport(targetDir, stats, deadCodeResult, graphBuil
   lines.push('')
   lines.push(`- Reachability: ${reachabilityScore}%`)
   lines.push(`- Connectivity: ${connectivityScore.toFixed(1)} imports/file`)
+  lines.push(`- Code Redundancy: ${(duplicateResult.stats.redundancyScore * 100).toFixed(1)}%`)
   lines.push('')
 
   // Dead Code Analysis
@@ -66,12 +68,41 @@ function generateComprehensiveReport(targetDir, stats, deadCodeResult, graphBuil
     lines.push('### Dead Files')
     lines.push('')
     deadCodeResult.deadFiles.slice(0, 10).forEach(file => {
-      lines.push(`- \`${file.path}\` - ${file.reason}`)
+      // Convert file:// URI to ./ relative path like other file references
+      const relativePath = file.path.replace('file://', '').replace(targetDir, '.')
+      lines.push(`- \`${relativePath}\` - ${file.reason}`)
     })
     if (deadCodeResult.deadFiles.length > 10) {
       lines.push(`- ... and ${deadCodeResult.deadFiles.length - 10} more`)
     }
     lines.push('')
+  }
+
+  // Duplicate Methods Analysis
+  if (duplicateResult.duplicates.length > 0) {
+    lines.push('## Duplicate Methods')
+    lines.push('')
+    lines.push(`Found ${duplicateResult.stats.duplicateGroups} duplicate method name(s):`)
+    lines.push('')
+
+    duplicateResult.duplicates.slice(0, 5).forEach(dup => {
+      const categoryEmoji = dup.category === 'cross-class' ? '🔄' :
+                           dup.category === 'cross-file' ? '📁' : '⚠️'
+      lines.push(`${categoryEmoji} **${dup.name}** (${dup.count} occurrences, ${dup.category})`)
+      dup.occurrences.slice(0, 3).forEach(occ => {
+        const location = occ.file ? `${occ.file.replace(targetDir, '.')}:${occ.line || '?'}` : 'unknown'
+        lines.push(`  - ${location}`)
+      })
+      if (dup.occurrences.length > 3) {
+        lines.push(`  - ... and ${dup.occurrences.length - 3} more`)
+      }
+      lines.push('')
+    })
+
+    if (duplicateResult.duplicates.length > 5) {
+      lines.push(`... and ${duplicateResult.duplicates.length - 5} more duplicate groups`)
+      lines.push('')
+    }
   }
 
   // Find largest files
@@ -136,8 +167,19 @@ function generateComprehensiveReport(targetDir, stats, deadCodeResult, graphBuil
     lines.push('- 🚪 Define entry points in `.erfrc.json` for better analysis')
   }
 
+  if (duplicateResult.stats.redundancyScore > 0.1) {
+    const crossClassDups = duplicateResult.duplicates.filter(d => d.category === 'cross-class').length
+    if (crossClassDups > 0) {
+      lines.push(`- 🔄 Review ${crossClassDups} cross-class duplicate(s) for potential refactoring`)
+    }
+  }
+
   if (deadCodeResult.stats.deadFiles === 0 && reachabilityScore === 100) {
-    lines.push('- ✅ No dead code detected! Codebase is clean.')
+    if (duplicateResult.stats.redundancyScore < 0.1) {
+      lines.push('- ✅ Codebase is healthy! No dead code and low redundancy.')
+    } else {
+      lines.push('- ✅ No dead code detected, but consider reviewing duplicate methods.')
+    }
   }
 
   lines.push('')
@@ -195,6 +237,13 @@ program
       const detector = new DeadCodeDetector(graphBuilder.getGraph())
       const deadCodeResult = detector.detect()
 
+      // Detect duplicate methods
+      const duplicateDetector = new DuplicateDetector(graphBuilder.getGraph(), {
+        threshold: 2,
+        ignoreCommon: true
+      })
+      const duplicateResult = duplicateDetector.detect()
+
       // Export to RDF if requested
       if (options.rdf !== undefined) {
         const rdfFilename = (typeof options.rdf === 'string') ? options.rdf : 'erf.ttl'
@@ -205,7 +254,7 @@ program
       }
 
       // Generate comprehensive report
-      let report = generateComprehensiveReport(targetDir, stats, deadCodeResult, graphBuilder, options)
+      let report = generateComprehensiveReport(targetDir, stats, deadCodeResult, duplicateResult, graphBuilder, options)
 
       // Save to file or print to stdout
       if (options.file !== undefined) {

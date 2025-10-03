@@ -19,6 +19,7 @@
     "cyclomaticComplexity": 10,
     "functionParameters": 5
   },
+  "entryPointPatterns": [],
   "languages": ["javascript"],
   "includeTests": false,
   "outputFormat": "json",
