@@ -20,6 +20,7 @@ import { handleHealth } from './tools/check-health.js'
 import { handleIsolated } from './tools/find-isolated.js'
 import { handleHubs } from './tools/find-hubs.js'
 import { handleFunctions } from './tools/analyze-functions.js'
+import { handleDuplicates } from './tools/find-duplicates.js'
 
 /**
  * MCP Server for erf code analysis
@@ -173,6 +174,44 @@ export class ErfMCPServer {
               },
               required: ['directory']
             }
+          },
+          {
+            name: 'erf_duplicates',
+            description: 'Find duplicate or similar method/function names across the codebase. Identifies potential code redundancy and naming inconsistencies.',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                directory: {
+                  type: 'string',
+                  description: 'Directory path to analyze'
+                },
+                configPath: {
+                  type: 'string',
+                  description: 'Optional path to config file'
+                },
+                threshold: {
+                  type: 'number',
+                  description: 'Minimum occurrences to report as duplicate (default: 2)',
+                  default: 2
+                },
+                ignoreCommon: {
+                  type: 'boolean',
+                  description: 'Ignore common method names like "constructor", "render", etc. (default: true)',
+                  default: true
+                },
+                includeSimilar: {
+                  type: 'boolean',
+                  description: 'Include similar names using Levenshtein distance (default: false)',
+                  default: false
+                },
+                similarityThreshold: {
+                  type: 'number',
+                  description: 'Similarity threshold for fuzzy matching (0-1, default: 0.8)',
+                  default: 0.8
+                }
+              },
+              required: ['directory']
+            }
           }
         ]
       }
@@ -196,6 +235,8 @@ export class ErfMCPServer {
             return await handleHubs(args)
           case 'erf_functions':
             return await handleFunctions(args)
+          case 'erf_duplicates':
+            return await handleDuplicates(args)
           default:
             throw new Error(`Unknown tool: ${name}`)
         }

@@ -129,17 +129,17 @@ class Logger {
   }
 
   /**
-   * Get the underlying loglevel instance
+   * Enable/disable stdout logging (internal method)
    */
-  getLogger() {
-    return log
+  _setStdout(enabled) {
+    this.stdoutEnabled = enabled
   }
 
   /**
-   * Enable/disable stdout logging
+   * Get the underlying loglevel instance (internal method)
    */
-  setStdout(enabled) {
-    this.stdoutEnabled = enabled
+  _getLogger() {
+    return log
   }
 }
 
@@ -163,14 +163,14 @@ export function getLogger() {
       console.error('Failed to initialize logger:', err)
     })
   }
-  return loggerInstance.getLogger()
+  return loggerInstance._getLogger()
 }
 
 /**
  * Set stdout logging on/off
  */
 export function setStdout(enabled) {
-  loggerInstance.setStdout(enabled)
+  loggerInstance._setStdout(enabled)
 }
 
 // Export logger methods directly for convenience

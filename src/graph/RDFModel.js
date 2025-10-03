@@ -102,6 +102,36 @@ export class RDFModel {
     if (metadata.complexity) {
       this.addTriple(functionNode, this.ns.code.complexity, rdf.literal(metadata.complexity))
     }
+    if (metadata.type) {
+      this.addTriple(functionNode, this.ns.erf.functionType, rdf.literal(metadata.type))
+    }
+    if (metadata.file) {
+      this.addTriple(functionNode, this.ns.erf.file, rdf.literal(metadata.file))
+    }
+    if (metadata.line) {
+      this.addTriple(functionNode, this.ns.code.line, rdf.literal(metadata.line))
+    }
+    if (metadata.params !== undefined) {
+      this.addTriple(functionNode, this.ns.erf.params, rdf.literal(metadata.params))
+    }
+    if (metadata.async !== undefined) {
+      this.addTriple(functionNode, this.ns.erf.async, rdf.literal(metadata.async))
+    }
+    if (metadata.generator !== undefined) {
+      this.addTriple(functionNode, this.ns.erf.generator, rdf.literal(metadata.generator))
+    }
+    if (metadata.static !== undefined) {
+      this.addTriple(functionNode, this.ns.erf.static, rdf.literal(metadata.static))
+    }
+    if (metadata.kind) {
+      this.addTriple(functionNode, this.ns.erf.kind, rdf.literal(metadata.kind))
+    }
+    if (metadata.className) {
+      this.addTriple(functionNode, this.ns.erf.className, rdf.literal(metadata.className))
+    }
+    if (metadata.methodName) {
+      this.addTriple(functionNode, this.ns.erf.methodName, rdf.literal(metadata.methodName))
+    }
 
     this.nodeCache.set(functionId, { node: functionNode, type: 'function' })
     return functionNode

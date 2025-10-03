@@ -20,6 +20,7 @@ A Javascript code quality and dependency analysis tool that helps identify unuse
 - 🏝️ **Isolated Subgraphs** - Code clusters with no connections to the main application
 - 🔥 **Complexity Hotspots** - Files and functions with high cyclomatic complexity
 - 📊 **Dependency Health** - Overall codebase health scores and metrics
+- 🔄 **Duplicate Detection** - Find duplicate method/function names indicating potential code redundancy
 
 ## Architecture
 
@@ -89,10 +90,11 @@ The ERF (Entity Relationship Framework) MCP tools provide powerful static analys
 - `mcp__erf__erf_isolated` - Identify code subgraphs with no connection to entry points
 - `mcp__erf__erf_hubs` - Find hub files (core infrastructure that many files depend on)
 - `mcp__erf__erf_functions` - Analyze function/method distribution and complexity
+- `mcp__erf__erf_duplicates` - Find duplicate or similar method/function names
 
 **When to Use ERF Tools:**
 - **Before major refactoring** - Use `erf_health` to get baseline metrics, `erf_hubs` to identify critical files needing extra testing
-- **During code cleanup** - Use `erf_dead_code` and `erf_isolated` to find candidates for removal
+- **During code cleanup** - Use `erf_dead_code` and `erf_isolated` to find candidates for removal, `erf_duplicates` to find redundant code
 - **After architecture changes** - Use `erf_analyze` to verify import/export structure, check connectivity
 - **Identifying technical debt** - Use `erf_health` to track missing imports, isolated files over time
 - **Understanding unfamiliar codebases** - Use `erf_hubs` to find the most important files to study first
@@ -178,6 +180,12 @@ erf health [directory]
 # Find isolated subgraphs (disconnected code)
 erf isolated [directory]
 
+# Find duplicate method/function names
+erf duplicates [directory]
+erf duplicates --threshold 3
+erf duplicates --include-similar
+erf duplicates --format json
+
 # Launch interactive GUI visualization
 erf show [directory]
 ```
@@ -196,6 +204,9 @@ Available MCP tools:
 - `erf_dead_code` - Find unused code
 - `erf_isolated` - Find disconnected modules
 - `erf_health` - Get health metrics
+- `erf_hubs` - Identify hub files (core infrastructure)
+- `erf_functions` - Analyze function/method distribution
+- `erf_duplicates` - Find duplicate/similar method names
 
 ### Configuration
 

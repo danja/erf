@@ -5,6 +5,7 @@ import { handleHealth } from '../../mcp/tools/check-health.js'
 import { handleIsolated } from '../../mcp/tools/find-isolated.js'
 import { handleHubs } from '../../mcp/tools/find-hubs.js'
 import { handleFunctions } from '../../mcp/tools/analyze-functions.js'
+import { handleDuplicates } from '../../mcp/tools/find-duplicates.js'
 import path from 'path'
 import { fileURLToPath } from 'url'
 
@@ -444,6 +445,185 @@ describe('MCP Tools Integration - erf codebase', () => {
     })
   })
 
+  describe('erf_duplicates tool', () => {
+    it('should find duplicate method names in erf codebase', async () => {
+      const args = {
+        directory: erfRoot,
+        configPath: configPath
+      }
+
+      const result = await handleDuplicates(args)
+
+      expect(result.content).toHaveLength(1)
+      expect(result.content[0].type).toBe('text')
+
+      const text = result.content[0].text
+
+      // Check report structure
+      expect(text).toContain('# Duplicate Method/Function Analysis:')
+      expect(text).toContain('## Statistics')
+      expect(text).toContain('Total Functions/Methods:')
+      expect(text).toContain('Unique Names:')
+      expect(text).toContain('Duplicate Groups:')
+      expect(text).toContain('Redundancy Score:')
+
+      // Parse stats
+      const totalFuncsMatch = text.match(/Total Functions\/Methods: (\d+)/)
+      expect(totalFuncsMatch).toBeDefined()
+      const totalFuncs = parseInt(totalFuncsMatch[1])
+      expect(totalFuncs).toBeGreaterThan(0)
+
+      const uniqueNamesMatch = text.match(/Unique Names: (\d+)/)
+      expect(uniqueNamesMatch).toBeDefined()
+      const uniqueNames = parseInt(uniqueNamesMatch[1])
+      expect(uniqueNames).toBeGreaterThan(0)
+
+      // Should have analysis section
+      expect(text).toContain('## Analysis')
+    })
+
+    it('should respect threshold parameter', async () => {
+      // High threshold - should find fewer or no duplicates
+      const result1 = await handleDuplicates({
+        directory: erfRoot,
+        configPath: configPath,
+        threshold: 10
+      })
+
+      // Low threshold - should find more duplicates
+      const result2 = await handleDuplicates({
+        directory: erfRoot,
+        configPath: configPath,
+        threshold: 2
+      })
+
+      const text1 = result1.content[0].text
+      const text2 = result2.content[0].text
+
+      const groups1Match = text1.match(/Duplicate Groups: (\d+)/)
+      const groups2Match = text2.match(/Duplicate Groups: (\d+)/)
+
+      if (groups1Match && groups2Match) {
+        const groups1 = parseInt(groups1Match[1])
+        const groups2 = parseInt(groups2Match[1])
+
+        // Lower threshold should find more or equal duplicates
+        expect(groups2).toBeGreaterThanOrEqual(groups1)
+      }
+    })
+
+    it('should handle ignoreCommon parameter', async () => {
+      const args = {
+        directory: erfRoot,
+        configPath: configPath,
+        ignoreCommon: false
+      }
+
+      const result = await handleDuplicates(args)
+      const text = result.content[0].text
+
+      // Should have statistics
+      expect(text).toContain('Duplicate Groups:')
+    })
+
+    it('should detect similar names with includeSimilar', async () => {
+      const args = {
+        directory: erfRoot,
+        configPath: configPath,
+        includeSimilar: true,
+        similarityThreshold: 0.8
+      }
+
+      const result = await handleDuplicates(args)
+      const text = result.content[0].text
+
+      // Should have similar names section if any found
+      if (text.includes('## Similar Names')) {
+        expect(text).toMatch(/Similar Names \(\d+ groups\)/)
+        expect(text).toMatch(/\d+% similar/)
+      }
+    })
+
+    it('should categorize duplicates by type', async () => {
+      const args = {
+        directory: erfRoot,
+        configPath: configPath,
+        threshold: 2,
+        ignoreCommon: false
+      }
+
+      const result = await handleDuplicates(args)
+      const text = result.content[0].text
+
+      // If duplicates found, should show category
+      if (text.includes('## Duplicate Names')) {
+        // Categories: cross-class, cross-file, same-file, mixed
+        const hasCategory = text.includes('cross-class') ||
+                          text.includes('cross-file') ||
+                          text.includes('same-file') ||
+                          text.includes('mixed')
+
+        if (text.match(/Duplicate Groups: [1-9]/)) {
+          expect(hasCategory).toBe(true)
+        }
+      }
+    })
+
+    it('should show file locations and line numbers', async () => {
+      const args = {
+        directory: erfRoot,
+        configPath: configPath,
+        threshold: 2
+      }
+
+      const result = await handleDuplicates(args)
+      const text = result.content[0].text
+
+      // If duplicates found, should show locations
+      if (text.includes('## Duplicate Names')) {
+        // Should have file paths with line numbers
+        expect(text).toMatch(/\.js:\d+/)
+      }
+    })
+
+    it('should provide actionable analysis', async () => {
+      const args = {
+        directory: erfRoot,
+        configPath: configPath
+      }
+
+      const result = await handleDuplicates(args)
+      const text = result.content[0].text
+
+      // Should always have analysis section
+      expect(text).toContain('## Analysis')
+
+      // Should have meaningful feedback
+      const hasAnalysis = text.includes('No duplicate method names') ||
+                         text.includes('cross-class') ||
+                         text.includes('cross-file') ||
+                         text.includes('redundancy score')
+
+      expect(hasAnalysis).toBe(true)
+    })
+
+    it('should handle codebase with no duplicates', async () => {
+      // Use a minimal config that might have no duplicates
+      const args = {
+        directory: erfRoot,
+        configPath: configPath,
+        threshold: 100 // Very high threshold
+      }
+
+      const result = await handleDuplicates(args)
+      const text = result.content[0].text
+
+      // Should handle gracefully
+      expect(text).toContain('Duplicate Method/Function Analysis')
+      expect(text).toContain('Statistics')
+    })
+  })
+
   describe('performance', () => {
     it('should complete analysis within reasonable time', async () => {
       const startTime = Date.now()
@@ -469,7 +649,8 @@ describe('MCP Tools Integration - erf codebase', () => {
         handleHealth({ directory: erfRoot, configPath }),
         handleIsolated({ directory: erfRoot, configPath }),
         handleHubs({ directory: erfRoot, configPath }),
-        handleFunctions({ directory: erfRoot, configPath })
+        handleFunctions({ directory: erfRoot, configPath }),
+        handleDuplicates({ directory: erfRoot, configPath })
       ])
 
       const endTime = Date.now()

@@ -6,6 +6,7 @@ import { fileURLToPath } from 'url'
 import { ErfConfig } from '../src/config/ErfConfig.js'
 import { GraphBuilder } from '../src/analyzers/GraphBuilder.js'
 import { DeadCodeDetector } from '../src/analyzers/DeadCodeDetector.js'
+import { DuplicateDetector } from '../src/analyzers/DuplicateDetector.js'
 import { initLogger } from '../src/utils/Logger.js'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -424,6 +425,61 @@ program
 
       console.log('')
       console.log('='.repeat(60))
+    } catch (error) {
+      console.error(`Error: ${error.message}`)
+      process.exit(1)
+    }
+  })
+
+/**
+ * Duplicates command - Find duplicate method/function names
+ */
+program
+  .command('duplicates')
+  .description('Find duplicate or similar method/function names')
+  .argument('[directory]', 'Directory to analyze', '.')
+  .option('-c, --config <file>', 'Config file path', '.erfrc.json')
+  .option('-t, --threshold <number>', 'Minimum occurrences to report (default: 2)', '2')
+  .option('--ignore-common', 'Ignore common method names', true)
+  .option('--include-similar', 'Include similar names (Levenshtein distance)')
+  .option('-f, --format <format>', 'Output format: text, json', 'text')
+  .option('-o, --output <file>', 'Output file (default: stdout)')
+  .action(async (directory, options) => {
+    try {
+      const targetDir = path.resolve(process.cwd(), directory)
+      console.log(`Finding duplicate method names in: ${targetDir}`)
+
+      // Load config
+      const config = await ErfConfig.load(options.config)
+
+      // Build graph
+      const graphBuilder = new GraphBuilder(config)
+      await graphBuilder.buildGraph(targetDir)
+
+      // Detect duplicates
+      const detector = new DuplicateDetector(graphBuilder.getGraph(), {
+        threshold: parseInt(options.threshold),
+        ignoreCommon: options.ignoreCommon,
+        includeSimilar: options.includeSimilar
+      })
+      const result = detector.detect()
+
+      // Format output
+      const output = detector.format(result, options.format)
+
+      if (options.output) {
+        const fs = await import('fs/promises')
+        const outputPath = path.resolve(process.cwd(), options.output)
+        await fs.writeFile(outputPath, output)
+        console.log(`\nOutput written to: ${outputPath}`)
+      } else {
+        console.log('\n' + output)
+      }
+
+      // Exit with error code if duplicates found (for CI/CD)
+      if (result.duplicates.length > 0) {
+        process.exit(1)
+      }
     } catch (error) {
       console.error(`Error: ${error.message}`)
       process.exit(1)
