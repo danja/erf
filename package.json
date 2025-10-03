@@ -1,11 +1,12 @@
 {
   "name": "erf-analyzer",
-  "version": "0.1.3",
+  "version": "0.2.0",
   "description": "embarrassing relative finder - identify dead code, broken dependencies, and complexity hotspots",
   "type": "module",
   "main": "src/index.js",
   "bin": {
     "erf": "bin/erf.js",
+    "erf-gui": "bin/erf-gui.js",
     "erf-mcp": "bin/erf-mcp.js"
   },
   "scripts": {

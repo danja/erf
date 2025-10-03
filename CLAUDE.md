@@ -8,11 +8,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Architecture
 
-erf is built with three main interfaces:
+erf is built with four main interfaces:
 
 1. **Core Analysis Engine** - JavaScript AST parsing with RDF graph storage
-2. **CLI Interface** - Commander.js-based command-line tools
-3. **MCP Server** - Model Context Protocol for AI assistant integration
+2. **CLI Interface** - Commander.js-based command-line tools (`bin/erf.js`)
+3. **GUI** - Web-based interactive visualization (`bin/erf-gui.js`, `ui/`)
+4. **MCP Server** - Model Context Protocol for AI assistant integration (`bin/erf-mcp.js`)
 
 ### Key Components
 
@@ -149,7 +150,12 @@ erf/
 │   └── index.js        # MCP server implementation
 ├── bin/
 │   ├── erf.js          # CLI entry point
+│   ├── erf-gui.js      # GUI launcher (starts API + Vite)
 │   └── erf-mcp.js      # MCP entry point
+├── ui/
+│   ├── server.js       # Express API server
+│   ├── index.html      # GUI entry point
+│   └── src/            # GUI source files
 ├── tests/
 │   ├── unit/           # Component tests
 │   └── integration/    # Full workflow tests
