@@ -65,9 +65,9 @@ app.post('/api/analyze', async (req, res) => {
     const healthScore = Math.max(0, Math.round((reachabilityScore * 0.7) + connectivityScore - redundancyPenalty))
 
     // Mark dead nodes (LOC is already calculated in GraphBuilder)
+    const deadFilePaths = new Set(deadCodeResult.deadFiles.map(f => f.path))
     for (const node of json.nodes) {
-      const isDead = deadCodeResult.deadFiles.some(f => f.path === node.id)
-      if (isDead) {
+      if (deadFilePaths.has(node.id)) {
         node.isDead = true
       }
 

@@ -6,6 +6,7 @@ class ErfUI {
     this.api = new ErfAPI()
     this.visualizer = null
     this.currentData = null
+    this.projectPath = null
 
     this.elements = {
       projectPath: document.getElementById('project-path'),
@@ -43,6 +44,7 @@ class ErfUI {
 
   async analyze() {
     const projectPath = this.elements.projectPath.value.trim() || '.'
+    this.projectPath = projectPath
     console.log('[ErfUI] Starting analysis for:', projectPath)
 
     this.showLoading()
@@ -182,11 +184,32 @@ class ErfUI {
     this.visualizer.setLayoutStrength(parseInt(value))
   }
 
+  formatPath(filePath) {
+    // Convert file:// URI to ./ relative path
+    if (!filePath) return filePath
+
+    // Remove file:// protocol
+    let path = filePath.replace('file://', '')
+
+    // If we have a project path, make it relative
+    if (this.projectPath && path.includes(this.projectPath)) {
+      // Handle both absolute and relative project paths
+      const absoluteProjectPath = this.projectPath.startsWith('/')
+        ? this.projectPath
+        : path.substring(0, path.indexOf(this.projectPath) + this.projectPath.length)
+
+      path = path.replace(absoluteProjectPath, '.')
+    }
+
+    return path
+  }
+
   showNodeDetails(node) {
-    this.elements.detailsTitle.textContent = node.label || node.id
+    const displayPath = this.formatPath(node.id)
+    this.elements.detailsTitle.textContent = node.label || displayPath
 
     let content = `<p><strong>Type:</strong> ${node.type}</p>`
-    content += `<p><strong>Path:</strong><br><code>${node.id}</code></p>`
+    content += `<p><strong>Path:</strong><br><code>${displayPath}</code></p>`
 
     if (node.metadata) {
       content += '<h4>Metadata</h4>'

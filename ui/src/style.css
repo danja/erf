@@ -19,7 +19,7 @@
   --color-node-file: #4a9eff;
   --color-node-external: #a78bfa;
   --color-node-entry: #4ade80;
-  --color-node-dead: #f87171;
+  --color-node-dead: #6b7280;
 
   --sidebar-width: 280px;
   --details-width: 320px;
@@ -219,14 +219,41 @@ button:active {
   background: var(--color-node-entry);
 }
 
+.node-icon.hub {
+  color: var(--color-node-entry);
+  background: var(--color-node-entry);
+}
+
 .node-icon.dead {
   color: var(--color-node-dead);
   background: var(--color-node-dead);
 }
 
+.node-icon.warning {
+  color: #f97316;
+  background: #f97316;
+}
+
 .node-icon.parse-error {
   color: #dc2626;
   background: #dc2626;
+}
+
+.node-icon.missing {
+  color: #6b7280;
+  background: transparent;
+  border-color: #6b7280;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 0.75rem;
+}
+
+.node-icon.missing::before {
+  content: '✕';
+  color: #6b7280;
 }
 
 /* Graph Container */
