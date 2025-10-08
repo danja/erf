@@ -10,6 +10,7 @@ class ErfUI {
 
     this.elements = {
       projectPath: document.getElementById('project-path'),
+      projectPathBrowse: document.getElementById('project-path-browse'),
       analyzeBtn: document.getElementById('analyze-btn'),
       exportRdfBtn: document.getElementById('export-rdf-btn'),
       search: document.getElementById('search'),
@@ -25,7 +26,22 @@ class ErfUI {
       detailsPanel: document.querySelector('.details-panel'),
       detailsTitle: document.getElementById('details-title'),
       detailsContent: document.getElementById('details-content'),
-      closeDetails: document.getElementById('close-details')
+      closeDetails: document.getElementById('close-details'),
+      directoryDialog: document.getElementById('directory-dialog'),
+      directoryList: document.getElementById('directory-list'),
+      directoryCurrentPath: document.getElementById('directory-current-path'),
+      directorySelectedPath: document.getElementById('directory-selected-path'),
+      directoryUp: document.getElementById('directory-up-btn'),
+      directoryCancel: document.getElementById('directory-cancel-btn'),
+      directorySelect: document.getElementById('directory-select-btn'),
+      directoryError: document.getElementById('directory-error')
+    }
+
+    this.directoryState = {
+      currentPath: null,
+      parentPath: null,
+      directories: [],
+      selectedPath: null
     }
 
     this.setupEventListeners()
@@ -40,6 +56,22 @@ class ErfUI {
     this.elements.filterDead.addEventListener('change', () => this.applyFilters())
     this.elements.layoutStrength.addEventListener('input', (e) => this.updateLayoutStrength(e.target.value))
     this.elements.closeDetails.addEventListener('click', () => this.hideDetails())
+    if (this.elements.projectPathBrowse) {
+      this.elements.projectPathBrowse.addEventListener('click', () => this.openDirectoryDialog())
+    }
+    if (this.elements.directoryCancel) {
+      this.elements.directoryCancel.addEventListener('click', () => this.closeDirectoryDialog())
+    }
+    if (this.elements.directorySelect) {
+      this.elements.directorySelect.addEventListener('click', () => this.confirmDirectorySelection())
+    }
+    if (this.elements.directoryUp) {
+      this.elements.directoryUp.addEventListener('click', () => this.navigateToParentDirectory())
+    }
+    if (this.elements.directoryList) {
+      this.elements.directoryList.addEventListener('click', (event) => this.handleDirectoryListClick(event))
+      this.elements.directoryList.addEventListener('dblclick', (event) => this.handleDirectoryListDoubleClick(event))
+    }
   }
 
   async analyze() {
@@ -202,6 +234,155 @@ class ErfUI {
     }
 
     return path
+  }
+
+  async openDirectoryDialog() {
+    if (!this.elements.directoryDialog) return
+    this.elements.directoryDialog.classList.remove('hidden')
+    const initialPath = this.elements.projectPath.value.trim() || '.'
+    await this.loadDirectory(initialPath)
+  }
+
+  closeDirectoryDialog() {
+    if (!this.elements.directoryDialog) return
+    this.elements.directoryDialog.classList.add('hidden')
+  }
+
+  async loadDirectory(targetPath, { allowFallback = true } = {}) {
+    if (!this.elements.directoryList) return
+
+    this.clearDirectoryError()
+    this.showDirectoryLoading()
+
+    try {
+      const data = await this.api.listDirectory(targetPath)
+      this.directoryState = {
+        currentPath: data.currentPath,
+        parentPath: data.parentPath,
+        directories: data.directories || [],
+        selectedPath: data.currentPath
+      }
+
+      this.renderDirectoryList()
+      this.updateDirectorySelection(this.directoryState.selectedPath)
+    } catch (error) {
+      if (allowFallback && targetPath !== '.') {
+        const fallbackMessage = `Could not open ${targetPath}. Showing current working directory instead.`
+        await this.loadDirectory('.', { allowFallback: false })
+        this.showDirectoryError(fallbackMessage)
+        return
+      }
+
+      this.directoryState = {
+        currentPath: targetPath,
+        parentPath: null,
+        directories: [],
+        selectedPath: null
+      }
+      this.renderDirectoryList()
+      this.updateDirectorySelection(null)
+      this.showDirectoryError(error.message || 'Unable to open directory')
+    }
+  }
+
+  showDirectoryLoading() {
+    if (!this.elements.directoryList) return
+    this.elements.directoryList.innerHTML = '<p class="directory-placeholder">Loading...</p>'
+    if (this.elements.directoryCurrentPath) {
+      this.elements.directoryCurrentPath.textContent = ''
+    }
+    this.updateDirectorySelection(null)
+  }
+
+  renderDirectoryList() {
+    if (!this.elements.directoryList) return
+
+    const { directories, currentPath } = this.directoryState
+
+    if (this.elements.directoryCurrentPath) {
+      this.elements.directoryCurrentPath.textContent = currentPath || ''
+    }
+
+    if (!directories || directories.length === 0) {
+      this.elements.directoryList.innerHTML = '<p class="directory-placeholder">No subdirectories</p>'
+      return
+    }
+
+    const fragment = document.createDocumentFragment()
+    directories.forEach((dir) => {
+      const button = document.createElement('button')
+      button.type = 'button'
+      button.className = 'directory-item'
+      button.dataset.path = dir.path
+      button.textContent = dir.name
+      fragment.appendChild(button)
+    })
+
+    this.elements.directoryList.innerHTML = ''
+    this.elements.directoryList.appendChild(fragment)
+  }
+
+  updateDirectorySelection(selectedPath) {
+    this.directoryState.selectedPath = selectedPath
+
+    if (this.elements.directorySelectedPath) {
+      this.elements.directorySelectedPath.textContent = selectedPath || 'None'
+    }
+
+    if (this.elements.directorySelect) {
+      this.elements.directorySelect.disabled = !selectedPath
+    }
+
+    if (this.elements.directoryList) {
+      const items = this.elements.directoryList.querySelectorAll('.directory-item')
+      items.forEach(item => {
+        if (item.dataset.path === selectedPath) {
+          item.classList.add('selected')
+        } else {
+          item.classList.remove('selected')
+        }
+      })
+    }
+  }
+
+  handleDirectoryListClick(event) {
+    const item = event.target.closest('.directory-item')
+    if (!item) return
+    this.updateDirectorySelection(item.dataset.path)
+  }
+
+  handleDirectoryListDoubleClick(event) {
+    const item = event.target.closest('.directory-item')
+    if (!item) return
+    this.navigateDirectory(item.dataset.path)
+  }
+
+  async navigateDirectory(path) {
+    if (!path) return
+    await this.loadDirectory(path)
+  }
+
+  async navigateToParentDirectory() {
+    if (!this.directoryState.parentPath) return
+    await this.loadDirectory(this.directoryState.parentPath)
+  }
+
+  confirmDirectorySelection() {
+    if (!this.directoryState.selectedPath) return
+    this.elements.projectPath.value = this.directoryState.selectedPath
+    this.closeDirectoryDialog()
+  }
+
+  showDirectoryError(message) {
+    if (!this.elements.directoryError) return
+    this.elements.directoryError.textContent = message
+    this.elements.directoryError.classList.remove('hidden')
+  }
+
+  clearDirectoryError() {
+    if (!this.elements.directoryError) return
+    this.elements.directoryError.classList.add('hidden')
+    this.elements.directoryError.textContent = ''
   }
 
   showNodeDetails(node) {

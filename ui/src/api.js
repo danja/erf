@@ -77,6 +77,34 @@ export class ErfAPI {
   }
 
   /**
+    * List directories within a given path for the GUI file selector
+    * @param {string} targetPath - Path to list
+    * @returns {Promise<Object>} Directory listing data
+    */
+  async listDirectory(targetPath = '.') {
+    const params = new URLSearchParams()
+    if (targetPath) {
+      params.set('path', targetPath)
+    }
+
+    const query = params.toString()
+    const response = await fetch(`${this.baseUrl}/list-directory${query ? `?${query}` : ''}`)
+
+    if (!response.ok) {
+      let errorDetail = ''
+      try {
+        const body = await response.json()
+        errorDetail = body?.error ? `: ${body.error}` : ''
+      } catch {
+        // ignore JSON parse errors
+      }
+      throw new Error(`Directory listing failed${errorDetail}`)
+    }
+
+    return await response.json()
+  }
+
+  /**
    * Calculate health score from stats
    */
   calculateHealthScore(stats) {

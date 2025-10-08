@@ -122,6 +122,25 @@ button:active {
   transform: translateY(1px);
 }
 
+button.secondary {
+  background: var(--color-surface-hover);
+  color: var(--color-text);
+}
+
+button.secondary:not(.outline):hover {
+  background: var(--color-border);
+}
+
+button.outline {
+  background: transparent;
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+}
+
+button.outline:hover {
+  background: var(--color-surface-hover);
+}
+
 /* Main Content */
 .main-content {
   display: flex;
@@ -396,6 +415,151 @@ button:active {
   word-break: break-all;
   display: inline-block;
   max-width: 100%;
+}
+
+/* Directory Dialog */
+#directory-dialog {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  z-index: 2000;
+}
+
+#directory-dialog.hidden {
+  display: none;
+}
+
+.directory-dialog {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  width: min(600px, 90vw);
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.5rem;
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.4);
+}
+
+.directory-dialog h3 {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.directory-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.directory-toolbar .directory-current {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--color-text-dim);
+}
+
+.directory-toolbar .path {
+  font-family: 'Menlo', 'Monaco', monospace;
+  color: var(--color-text);
+  word-break: break-all;
+}
+
+.directory-hint {
+  font-size: 0.75rem;
+  color: var(--color-text-dim);
+}
+
+.directory-selected {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.directory-selected .label,
+.directory-toolbar .label {
+  color: var(--color-text-dim);
+  font-weight: 500;
+}
+
+.directory-selected .path {
+  font-family: 'Menlo', 'Monaco', monospace;
+  color: var(--color-text);
+  word-break: break-all;
+}
+
+.directory-list {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 0.75rem;
+  flex: 1;
+  min-height: 220px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.directory-item {
+  width: 100%;
+  text-align: left;
+  background: var(--color-surface);
+  border: 1px solid transparent;
+  color: var(--color-text);
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.directory-item::before {
+  content: '📁';
+}
+
+.directory-item:hover {
+  background: var(--color-surface-hover);
+  border-color: var(--color-border);
+}
+
+.directory-item.selected {
+  border-color: var(--color-primary);
+  background: rgba(74, 158, 255, 0.15);
+}
+
+.directory-placeholder {
+  color: var(--color-text-dim);
+  text-align: center;
+  font-size: 0.875rem;
+  padding: 1rem 0;
+}
+
+.dialog-error {
+  background: rgba(248, 113, 113, 0.1);
+  color: var(--color-error);
+  border: 1px solid rgba(248, 113, 113, 0.4);
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+.dialog-actions button {
+  min-width: 110px;
 }
 
 /* Utility Classes */

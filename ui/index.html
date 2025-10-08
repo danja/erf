@@ -17,8 +17,9 @@
       <div class="control-group">
         <label for="project-path">Project Path:</label>
         <input type="text" id="project-path" placeholder="/path/to/project" value=".">
-        <button id="analyze-btn">Analyze</button>
-        <button id="export-rdf-btn" disabled>Export</button>
+        <button id="project-path-browse" type="button" class="secondary">Browse…</button>
+        <button id="analyze-btn" type="button">Analyze</button>
+        <button id="export-rdf-btn" type="button" disabled>Export</button>
       </div>
 
       <div class="control-group">
@@ -92,6 +93,30 @@
         <h3 id="details-title">Node Details</h3>
         <div id="details-content"></div>
       </aside>
+    </div>
+  </div>
+
+  <div id="directory-dialog" class="hidden">
+    <div class="directory-dialog">
+      <h3>Select Project Directory</h3>
+      <div class="directory-toolbar">
+        <button id="directory-up-btn" type="button" class="secondary outline" title="Go up one level">Up</button>
+        <div class="directory-current">
+          <span class="label">Current:</span>
+          <span id="directory-current-path" class="path"></span>
+        </div>
+      </div>
+      <p class="directory-hint">Double-click a folder to open it. Click once to select it.</p>
+      <div class="directory-selected">
+        <span class="label">Selected:</span>
+        <span id="directory-selected-path" class="path">None</span>
+      </div>
+      <div id="directory-error" class="dialog-error hidden"></div>
+      <div id="directory-list" class="directory-list"></div>
+      <div class="dialog-actions">
+        <button id="directory-cancel-btn" type="button" class="secondary outline">Cancel</button>
+        <button id="directory-select-btn" type="button" disabled>Select</button>
+      </div>
     </div>
   </div>
 

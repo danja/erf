@@ -1,10 +1,11 @@
 import express from 'express'
+import fs from 'fs/promises'
+import path from 'path'
 import { GraphBuilder } from '../src/analyzers/GraphBuilder.js'
 import { DeadCodeDetector } from '../src/analyzers/DeadCodeDetector.js'
 import { DuplicateDetector } from '../src/analyzers/DuplicateDetector.js'
 import { ErfConfig } from '../src/config/ErfConfig.js'
 import { initLogger } from '../src/utils/Logger.js'
-import path from 'path'
 
 // Initialize logger with stdout enabled (API server mode)
 await initLogger({ stdout: true })
@@ -19,6 +20,50 @@ app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*')
   res.header('Access-Control-Allow-Headers', 'Content-Type')
   next()
+})
+
+/**
+ * GET /api/list-directory
+ * Return directories within a given path to power the GUI file selector
+ */
+app.get('/api/list-directory', async (req, res) => {
+  try {
+    const requestedPath = req.query.path || '.'
+    const resolvedPath = path.resolve(requestedPath)
+
+    const stats = await fs.stat(resolvedPath)
+    if (!stats.isDirectory()) {
+      return res.status(400).json({ error: 'Requested path is not a directory' })
+    }
+
+    const entries = await fs.readdir(resolvedPath, { withFileTypes: true })
+    const directories = entries
+      .filter(entry => entry.isDirectory())
+      .map(entry => ({
+        name: entry.name,
+        path: path.join(resolvedPath, entry.name)
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name))
+
+    const { root } = path.parse(resolvedPath)
+    const parentPath = resolvedPath === root ? null : path.dirname(resolvedPath)
+
+    res.json({
+      currentPath: resolvedPath,
+      parentPath,
+      directories
+    })
+  } catch (error) {
+    if (error.code === 'ENOENT') {
+      return res.status(404).json({ error: 'Directory not found' })
+    }
+    if (error.code === 'EACCES') {
+      return res.status(403).json({ error: 'Access denied to directory' })
+    }
+
+    console.error('Directory listing error:', error)
+    res.status(500).json({ error: error.message })
+  }
 })
 
 /**

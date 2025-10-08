@@ -102,6 +102,19 @@ Or manually edit your MCP configuration file:
 }
 ```
 
+### Using `npx` for the Latest MCP Release
+
+```toml
+[mcp_servers.erf]
+command = "npx"
+args = ["--yes", "--package", "erf-analyzer@latest", "erf-mcp"]
+```
+
+- **Hyphenated binary:** use `erf-mcp` (npx maps the npm name `erf-analyzer` to that executable).
+- **First-run delay:** npx downloads the package on first use; if your MCP client has a short startup timeout, prime the cache with a shell run of `npx --yes --package erf-analyzer@latest erf-mcp` or bump the client timeout.
+- **Faster starts:** once cached, npx launches almost instantly. Alternatively, install globally (`npm install -g erf-analyzer`) and point the client at the `erf-mcp` binary to skip npx entirely.
+- **Pinning:** swap `@latest` for a specific version if you need deterministic behaviour.
+
 ---
 
 **the following was what Claude suggested I put in CLAUDE.md after trying the MCP tools:**
